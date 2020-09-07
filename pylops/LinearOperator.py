@@ -6,6 +6,7 @@ import scipy as sp
 from scipy.linalg import solve, lstsq
 from scipy.sparse.linalg import LinearOperator as spLinearOperator
 from scipy.sparse.linalg.interface import _ProductLinearOperator, _ScaledLinearOperator
+from scipy.sparse import eye
 from scipy.sparse.linalg import spsolve, lsqr
 from scipy.linalg import eigvals
 from scipy.sparse.linalg import eigs as sp_eigs
@@ -64,6 +65,12 @@ class LinearOperator(spLinearOperator):
         Modified version of scipy _matmat to avoid having trailing dimension
         in col when provided to matvec
         """
+        if sp.sparse.issparse(X):
+            y = np.vstack([self.matvec(col.toarray().reshape(-1)) for col in X.T]).T
+        else:
+            y = np.vstack([self.matvec(col.reshape(-1)) for col in X.T]).T
+        return y
+
         return np.vstack([self.matvec(col.reshape(-1)) for col in X.T]).T
 
     def __mul__(self, x):
@@ -89,6 +96,9 @@ class LinearOperator(spLinearOperator):
 
     def _adjoint(self):
         return aslinearoperator(super()._adjoint())
+
+    def _transpose(self):
+        return aslinearoperator(super()._transpose())
 
     def matvec(self, x):
         """Matrix-vector multiplication.
@@ -156,6 +166,60 @@ class LinearOperator(spLinearOperator):
             raise ValueError(
                 'invalid shape returned by user-defined rmatvec()')
         return y
+
+    def matmat(self, X):
+        """Matrix-matrix multiplication.
+
+        Modified version of scipy matmat which does not consider the case
+        where the input vector is ``np.matrix`` (the use ``np.matrix`` is now
+        discouraged in numpy's documentation).
+
+        Parameters
+        ----------
+        x : :obj:`numpy.ndarray`
+            Input array of shape (N,K)
+
+        Returns
+        -------
+        y : :obj:`numpy.ndarray`
+            Output array of shape (M,K)
+
+        """
+        if X.ndim != 2:
+            raise ValueError('expected 2-d ndarray or matrix, '
+                             'not %d-d' % X.ndim)
+        if X.shape[0] != self.shape[1]:
+            raise ValueError('dimension mismatch: %r, %r'
+                             % (self.shape, X.shape))
+        Y = self._matmat(X)
+        return Y
+
+    def rmatmat(self, X):
+        """Matrix-matrix multiplication.
+
+        Modified version of scipy rmatmat which does not consider the case
+        where the input vector is ``np.matrix`` (the use ``np.matrix`` is now
+        discouraged in numpy's documentation).
+
+        Parameters
+        ----------
+        x : :obj:`numpy.ndarray`
+            Input array of shape (M,K)
+
+        Returns
+        -------
+        y : :obj:`numpy.ndarray`
+            Output array of shape (N,K)
+
+        """
+        if X.ndim != 2:
+            raise ValueError('expected 2-d ndarray or matrix, '
+                             'not %d-d' % X.ndim)
+        if X.shape[0] != self.shape[0]:
+            raise ValueError('dimension mismatch: %r, %r'
+                             % (self.shape, X.shape))
+        Y = self._rmatmat(X)
+        return Y
 
     def dot(self, x):
         """Matrix-matrix or matrix-vector multiplication.
@@ -242,11 +306,17 @@ class LinearOperator(spLinearOperator):
         r"""Return dense matrix.
 
         The operator in converted into its dense matrix equivalent. In order
-        to do so, the operator is applied to an identity matrix whose number
-        of rows and columns is equivalent to the number of columns of the
-        operator. Note that this operation may be costly for very large
-        operators and it is only suggest it to use as a way to inspect the
-        structure of the matricial equivalent of the operator.
+        to do so, square or tall operators are applied to an identity matrix
+        whose number of rows and columns is equivalent to the number of
+        columns of the operator. Conversely, for skinny operators, the
+        transpose operator is applied to an identity matrix
+        whose number of rows and columns is equivalent to the number of
+        rows of the operator and the resulting matrix is transposed
+        (and complex conjugated).
+
+        Note that this operation may be costly for operators with large number
+        of rows and columns and it should be used mostly as a way to inspect
+        the structure of the matricial equivalent of the operator.
 
         Returns
         -------
@@ -259,10 +329,21 @@ class LinearOperator(spLinearOperator):
         # the dense method
         Op = aslinearoperator(self)
 
-        identity = np.eye(self.shape[1], dtype=self.dtype)
-        matrix = Op.matmat(identity)
-        return matrix
+        # Create identity matrix
+        shapemin = min(Op.shape)
+        if shapemin <= 1e3:
+            # use numpy for small matrices (faster but heavier on memory)
+            identity = np.eye(shapemin, dtype=self.dtype)
+        else:
+            # use scipy for small matrices (slower but lighter on memory)
+            identity = eye(shapemin, dtype=self.dtype).tocsc()
 
+        # Apply operator
+        if Op.shape[1] == shapemin:
+            matrix = Op.matmat(identity)
+        else:
+            matrix = np.conj(Op.rmatmat(identity)).T
+        return matrix
 
     def tosparse(self):
         r"""Return sparse matrix.
@@ -277,7 +358,6 @@ class LinearOperator(spLinearOperator):
             Sparse matrix.
 
         """
-
         Op = aslinearoperator(self)
         (_, n) = self.shape
 
