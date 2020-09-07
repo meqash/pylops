@@ -99,7 +99,7 @@ class FirstDerivative(LinearOperator):
             y = ncp.zeros(self.N, self.dtype)
             y[:-1] = (x[1:] - x[:-1]) / self.sampling
         else:
-            x = np.reshape(x, self.dims)
+            x = ncp.reshape(x, self.dims)
             if self.dir > 0:  # need to bring the dim. to derive to first dim.
                 x = ncp.swapaxes(x, self.dir, 0)
             y = ncp.zeros(x.shape, self.dtype)
@@ -117,9 +117,9 @@ class FirstDerivative(LinearOperator):
             y[:-1] -= x[:-1] / self.sampling
             y[1:] += x[:-1] / self.sampling
         else:
-            x = np.reshape(x, self.dims)
+            x = ncp.reshape(x, self.dims)
             if self.dir > 0:  # need to bring the dim. to derive to first dim.
-                x = np.swapaxes(x, self.dir, 0)
+                x = ncp.swapaxes(x, self.dir, 0)
             y = ncp.zeros(x.shape, self.dtype)
             y[:-1] -= x[:-1] / self.sampling
             y[1:] += x[:-1] / self.sampling
@@ -166,7 +166,7 @@ class FirstDerivative(LinearOperator):
         else:
             x = ncp.reshape(x, self.dims)
             if self.dir > 0:  # need to bring the dim. to derive to first dim.
-                x = np.swapaxes(x, self.dir, 0)
+                x = ncp.swapaxes(x, self.dir, 0)
             y = ncp.zeros(x.shape, self.dtype)
             y[0:-2] -= (0.5 * x[1:-1]) / self.sampling
             y[2:] += (0.5 * x[1:-1]) / self.sampling
@@ -207,7 +207,7 @@ class FirstDerivative(LinearOperator):
         else:
             x = ncp.reshape(x, self.dims)
             if self.dir > 0:  # need to bring the dim. to derive to first dim.
-                x = np.swapaxes(x, self.dir, 0)
+                x = ncp.swapaxes(x, self.dir, 0)
             y = ncp.zeros(x.shape, self.dtype)
             y[:-1] -= x[1:] / self.sampling
             y[1:] += x[1:] / self.sampling
