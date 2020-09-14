@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.ma as np_ma
-
 from pylops import LinearOperator
+from pylops.utils.backend import get_array_module
 
 
 class Restriction(LinearOperator):
@@ -129,6 +129,7 @@ class Restriction(LinearOperator):
             Masked array.
 
         """
+        ncp = get_array_module(x)
         y = np_ma.array(np.zeros(self.dims), mask=np.ones(self.dims),
                         dtype=self.dtype)
         if self.reshape:
@@ -136,7 +137,10 @@ class Restriction(LinearOperator):
             x = np.swapaxes(x, self.dir, 0)
             y = np.swapaxes(y, self.dir, 0)
         y.mask[self.iava] = False
-        y[self.iava] = x[self.iava]
+        if ncp == np:
+          y[self.iava] = x[self.iava]
+        else:
+          y[self.iava] = ncp.asnumpy(x)[self.iava]
         if self.reshape:
             y = np.swapaxes(y, 0, self.dir)
         return y

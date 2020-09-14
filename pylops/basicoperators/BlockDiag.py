@@ -5,6 +5,7 @@ from pylops import LinearOperator
 from pylops.basicoperators import MatrixMult
 from pylops.utils.backend import get_array_module
 
+
 class BlockDiag(LinearOperator):
     r"""Block-diagonal operator.
 
