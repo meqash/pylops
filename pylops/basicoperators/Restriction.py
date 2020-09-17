@@ -142,7 +142,6 @@ class Restriction(LinearOperator):
         if ncp == np:
           y[self.iava] = x[self.iava]
         else:
-          print('here')
           y[self.iava] = ncp.asnumpy(x)[self.iava]
         if self.reshape:
             y = np.swapaxes(y, 0, self.dir)
