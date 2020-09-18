@@ -115,8 +115,8 @@ Wave-Equation processing
     Demigration
 
 
-Geophysicical subsurface characterization
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Geophysical subsurface characterization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pylops.avo
 
@@ -140,6 +140,7 @@ Basic
 .. autosummary::
    :toctree: generated/
 
+    solver.cg
     solver.cgls
 
 Least-squares

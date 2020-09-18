@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 
 from pylops.basicoperators import MatrixMult
-from pylops.optimization.solver import cgls
+from pylops.optimization.solver import cg, cgls
 
 par1 = {'ny': 11, 'nx': 11, 'imag': 0, 'x0': False,
         'dtype': 'float64'}  # square real, zero initial guess
@@ -21,6 +21,30 @@ par3j = {'ny': 31, 'nx': 11, 'imag': 1j, 'x0': False,
          'dtype': 'complex64'}  # overdetermined complex, zero initial guess
 par4j = {'ny': 31, 'nx': 11, 'imag': 1j, 'x0': True,
          'dtype': 'complex64'}  # overdetermined complex, non-zero initial guess
+
+
+@pytest.mark.parametrize("par", [(par1), (par2), (par3), (par4),
+                                 (par1j), (par2j), (par3j), (par3j)])
+def test_cg(par):
+    """CG with linear operator
+    """
+    np.random.seed(10)
+
+    A = np.random.normal(0, 10, (par['ny'], par['nx'])) + \
+        par['imag'] * np.random.normal(0, 10, (par['ny'], par['nx']))
+    A = np.conj(A).T @ A # to ensure definite positive matrix
+    Aop = MatrixMult(A, dtype='float64')
+
+    x = np.ones(par['nx']) + par['imag'] * np.ones(par['nx'])
+    if par['x0']:
+        x0 = np.random.normal(0, 10, par['nx']) + \
+             par['imag'] * np.random.normal(0, 10, par['nx'])
+    else:
+        x0 = np.zeros_like(x)
+
+    y = Aop * x
+    xinv = cg(Aop, y, x0=x0, niter=par['nx'], tol=1e-5, show=False)[0]
+    assert_array_almost_equal(x, xinv, decimal=4)
 
 
 @pytest.mark.parametrize("par", [(par1), (par2), (par3), (par4),
@@ -43,5 +67,4 @@ def test_cgls(par):
 
     y = Aop * x
     xinv = cgls(Aop, y, x0=x0, niter=par['nx'], tol=1e-5, show=False)[0]
-
     assert_array_almost_equal(x, xinv, decimal=4)
