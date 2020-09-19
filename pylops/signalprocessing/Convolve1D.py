@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.signal import convolve, fftconvolve, oaconvolve
 from pylops import LinearOperator
+from pylops.utils.backend import get_convolve,  get_fftconvolve, get_oaconvolve
 
 
 class Convolve1D(LinearOperator):
@@ -90,9 +90,9 @@ class Convolve1D(LinearOperator):
         if offset > len(h) - 1:
             raise ValueError('offset must be smaller than len(h) - 1')
         self.h = h
-        self.hstar = np.flip(self.h)
+        self.hstar = np.flip(self.h, axis=-1)
         self.nh = len(h)
-        self.offset = 2*(self.nh // 2 - int(offset))
+        self.offset = 2 * (self.nh // 2 - int(offset))
         if self.nh % 2 == 0:
             self.offset -= 1
         if self.offset != 0:
@@ -100,7 +100,7 @@ class Convolve1D(LinearOperator):
                 np.pad(self.h, (self.offset if self.offset > 0 else 0,
                                 -self.offset if self.offset < 0 else 0),
                        mode='constant')
-        self.hstar = np.flip(self.h)
+        self.hstar = np.flip(self.h, axis=-1)
         if dims is not None:
             # add dimensions to filter to match dimensions of model and data
             hdims = [1] * len(dims)
@@ -124,14 +124,14 @@ class Convolve1D(LinearOperator):
                 self.method = 'direct'
             if self.method not in ('direct', 'fft'):
                 raise NotImplementedError('method must be direct or fft')
-            self.convfunc = convolve
+            self.convfunc = get_convolve(h)
         else:
             if method is None:
                 self.method = 'fft'
             if self.method == 'fft':
-                self.convfunc = fftconvolve
+                self.convfunc = get_fftconvolve(h)
             elif self.method == 'overlapadd':
-                self.convfunc = oaconvolve
+                self.convfunc = get_oaconvolve(h)
             else:
                 raise NotImplementedError('method must be fft or overlapadd')
         self.shape = (np.prod(self.dims), np.prod(self.dims))
