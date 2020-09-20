@@ -106,7 +106,7 @@ def get_fftconvolve(x):
         return fftconvolve
     else:
         if deps.cusignal_enabled:
-            return cusignal.convolution.convolve.fftconvolve
+            return cusignal.convolution.fftconvolve
         else:
             raise ModuleNotFoundError(cusignal_message)
 
@@ -134,3 +134,24 @@ def get_oaconvolve(x):
         raise NotImplementedError('oaconvolve not implemented in '
                                   'cupy/cusignal. Consider using a different'
                                   'option...')
+
+def to_cupy_conditional(x, y):
+    """Convert y to cupy array conditional to x being a cupy array
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array to evaluate
+    y : :obj:`numpy.ndarray`
+        Array to convert
+
+    Returns
+    -------
+    y : :obj:`numpy.ndarray`
+        Converted array
+
+    """
+    if deps.cupy_enabled:
+        if cp.get_array_module(x) == cp and cp.get_array_module(y) == np:
+            y = cp.array(y)
+    return y
