@@ -4,6 +4,8 @@ from scipy.signal import convolve, fftconvolve, oaconvolve
 
 if deps.cupy_enabled:
     import cupy as cp
+
+if deps.cusignal_enabled:
     import cusignal
 
 cu_message = 'cupy package not installed. Use numpy arrays of ' \
