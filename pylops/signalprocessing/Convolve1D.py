@@ -1,6 +1,7 @@
 import numpy as np
 from pylops import LinearOperator
-from pylops.utils.backend import get_convolve,  get_fftconvolve, get_oaconvolve
+from pylops.utils.backend import get_array_module, get_convolve, \
+    get_fftconvolve, get_oaconvolve, to_cupy_conditional
 
 
 class Convolve1D(LinearOperator):
@@ -139,6 +140,7 @@ class Convolve1D(LinearOperator):
         self.explicit = False
 
     def _matvec(self, x):
+        self.h = to_cupy_conditional(x, self.h)
         if not self.reshape:
             y = self.convfunc(x.squeeze(), self.h, mode='same', method=self.method)
         else:
@@ -148,6 +150,7 @@ class Convolve1D(LinearOperator):
         return y
 
     def _rmatvec(self, x):
+        self.hstar = to_cupy_conditional(x, self.hstar)
         if not self.reshape:
             y = self.convfunc(x.squeeze(), self.hstar, mode='same', method=self.method)
         else:
