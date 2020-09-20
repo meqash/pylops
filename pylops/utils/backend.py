@@ -71,6 +71,9 @@ def get_convolve(x):
         Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
 
     """
+    if not deps.cupy_enabled:
+        return convolve
+
     if cp.get_array_module(x) == np:
         return convolve
     else:
@@ -94,6 +97,9 @@ def get_fftconvolve(x):
         Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
 
     """
+    if not deps.cupy_enabled:
+        return fftconvolve
+
     if cp.get_array_module(x) == np:
         return fftconvolve
     else:
@@ -117,6 +123,9 @@ def get_oaconvolve(x):
         Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
 
     """
+    if not deps.cupy_enabled:
+        return oaconvolve
+
     if cp.get_array_module(x) == np:
         return oaconvolve
     else:
