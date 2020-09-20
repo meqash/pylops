@@ -158,7 +158,7 @@ class Convolve1D(LinearOperator):
                               method=self.method)
         else:
             x = np.reshape(x, self.dims)
-            y = self.convfunc(x, self.h, mode='same', axes=self.dir)
+            y = self.convfunc(x, self.h, mode='same')
             y = y.ravel()
         return y
 
@@ -172,6 +172,6 @@ class Convolve1D(LinearOperator):
                               method=self.method)
         else:
             x = np.reshape(x, self.dims)
-            y = self.convfunc(x, self.hstar, mode='same', axes=self.dir)
+            y = self.convfunc(x, self.hstar, mode='same')
             y = y.ravel()
         return y
