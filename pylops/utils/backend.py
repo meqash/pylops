@@ -1,6 +1,6 @@
 import numpy as np
-from pylops.utils import deps
 from scipy.signal import convolve, fftconvolve, oaconvolve
+from pylops.utils import deps
 
 if deps.cupy_enabled:
     import cupy as cp
@@ -153,5 +153,5 @@ def to_cupy_conditional(x, y):
     """
     if deps.cupy_enabled:
         if cp.get_array_module(x) == cp and cp.get_array_module(y) == np:
-            y = cp.array(y)
+            y = cp.asarray(y)
     return y
