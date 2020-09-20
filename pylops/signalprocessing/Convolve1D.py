@@ -164,7 +164,7 @@ class Convolve1D(LinearOperator):
 
     def _rmatvec(self, x):
         if type(self.hstar) != type(x):
-            self.h = to_cupy_conditional(x, self.hstar)
+            self.hstar = to_cupy_conditional(x, self.hstar)
             self.convfunc, self.method = \
                 _choose_convfunc(self.hstar, self.method, self.dimsorig)
         if not self.reshape:
