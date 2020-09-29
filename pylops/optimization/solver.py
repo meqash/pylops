@@ -137,8 +137,23 @@ def cgls(Op, y, x0, niter=10, damp=0., tol=1e-4,
     -------
     x : :obj:`np.ndarray`
         Estimated model of size :math:`[M \times 1]`
+    istop : :obj:`int`
+        Gives the reason for termination
+
+        ``1`` means :math:`\mathbf{x}` is an approximate solution to
+        :math:`\mathbf{d} = \mathbf{Op}\mathbf{x}`
+
+        ``2`` means :math:`\mathbf{x}` approximately solves the least-squares
+        problem
     iit : :obj:`int`
-        Number of executed iterations
+        Iteration number upon termination
+    r1norm : :obj:`float`
+        :math:`||\mathbf{r}||_2^2`, where
+        :math:`\mathbf{r} = \mathbf{d} - \mathbf{Op}\mathbf{x}`
+    r2norm : :obj:`float`
+        :math:`\sqrt{\mathbf{r}^T\mathbf{r}  +
+        \epsilon^2 \mathbf{x}^T\mathbf{x}}`.
+        Equal to ``r1norm`` if :math:`\epsilon=0`
     cost : :obj:`numpy.ndarray`, optional
         History of cost function
 
@@ -147,7 +162,8 @@ def cgls(Op, y, x0, niter=10, damp=0., tol=1e-4,
     Minimize the following functional using conjugate gradient iterations:
 
     .. math::
-        J = || \mathbf{y} -  \mathbf{Ax} ||_2^2 + \epsilon^2 || \mathbf{x} ||_2^2
+        J = || \mathbf{y} -  \mathbf{Ax} ||_2^2 +
+        \epsilon^2 || \mathbf{x} ||_2^2
 
     where :math:`\epsilon` is the damping coefficient.
 
@@ -210,4 +226,9 @@ def cgls(Op, y, x0, niter=10, damp=0., tol=1e-4,
               % (iiter, time.time() - tstart))
         print(
             '-----------------------------------------------------------------\n')
-    return x, iiter, cost[:iiter]
+
+    # reason for termination
+    istop = 1 if kold < tol else 2
+    r1norm = kold
+    r2norm = cost[iiter]
+    return x, istop, iiter, r1norm, r2norm, cost[:iiter]
