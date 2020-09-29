@@ -230,7 +230,7 @@ def RegularizedInversion(Op, Regs, data, Weight=None, dataregs=None,
     Returns
     -------
     xinv : :obj:`numpy.ndarray`
-        Inverted model :math:`\mathbf{Op}`
+        Inverted model.
     istop : :obj:`int`
         Gives the reason for termination
 
@@ -325,9 +325,9 @@ def RegularizedInversion(Op, Regs, data, Weight=None, dataregs=None,
         xinv, istop, itn, r1norm, r2norm = lsqr(RegOp, datatot,
                                                 **kwargs_solver)[0:5]
     else:
-        xinv, itn, r2norm = cgls(RegOp, datatot, ncp.zeros(RegOp.shape[1]),
-                                 **kwargs_solver)[0:5]
-        istop = r1norm = None # currently not provided by cgls
+        xinv, istop, itn, r1norm, r2norm = \
+            cgls(RegOp, datatot, ncp.zeros(RegOp.shape[1]),
+                 **kwargs_solver)[0:5]
     if x0 is not None:
         xinv = x0 + xinv
     if returninfo:
@@ -337,7 +337,7 @@ def RegularizedInversion(Op, Regs, data, Weight=None, dataregs=None,
 
 
 def PreconditionedInversion(Op, P, data, x0=None, returninfo=False,
-                            **kwargs_lsqr):
+                            **kwargs_solver):
     r"""Preconditioned inversion.
 
     Solve a system of preconditioned equations given the operator
@@ -355,10 +355,11 @@ def PreconditionedInversion(Op, P, data, x0=None, returninfo=False,
         Initial guess
     returninfo : :obj:`bool`
         Return info of LSQR solver
-    **kwargs_lsqr
-        Arbitrary keyword arguments for
-        :py:func:`scipy.sparse.linalg.lsqr` solver
-
+    **kwargs_solver
+        Arbitrary keyword arguments for chosen solver
+        (:py:func:`scipy.sparse.linalg.lsqr` and
+        :py:func:`pylops.optimization.solver.cgls` are used as default for numpy
+        and cupy `data`, respectively)
     Returns
     -------
     xinv : :obj:`numpy.ndarray`
@@ -399,14 +400,23 @@ def PreconditionedInversion(Op, P, data, x0=None, returninfo=False,
     original space.
 
     """
+    ncp = get_array_module(data)
+
     # Preconditioned operator
-    POp = Op*P
-    # LSQR solver
+    POp = Op * P
+
+    # Solver
     if x0 is not None:
         data = data - Op * x0
 
-    pinv, istop, itn, r1norm, r2norm = lsqr(POp, data, **kwargs_lsqr)[0:5]
-    xinv = P*pinv
+    if ncp == np:
+        pinv, istop, itn, r1norm, r2norm = \
+            lsqr(POp, data, **kwargs_solver)[0:5]
+    else:
+        pinv, istop, itn, r1norm, r2norm = \
+            cgls(POp, data, ncp.zeros(int(POp.shape[1])),
+                 **kwargs_solver)[0:5]
+    xinv = P * pinv
     if x0 is not None:
         xinv = xinv + x0
 
