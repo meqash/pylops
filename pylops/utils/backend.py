@@ -39,6 +39,30 @@ def get_module(backend='numpy'):
     return ncp
 
 
+def get_module_name(mod):
+    """Returns name of numerical module based on input numerical module
+
+    Parameters
+    ----------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    Returns
+    -------
+    backend : :obj:`str`, optional
+        Backend used for dot test computations (``numpy`` or ``cupy``). This
+        parameter will be used to choose how to create the random vectors.
+
+    """
+    if mod == np:
+        backend = 'numpy'
+    elif mod == cp:
+        backend = 'cupy'
+    else:
+        raise ValueError('module must be numpy or cupy')
+    return backend
+
+
 def get_array_module(x):
     """Returns correct numerical module based on input
 
@@ -135,19 +159,20 @@ def get_oaconvolve(x):
                                   'cupy/cusignal. Consider using a different'
                                   'option...')
 
+
 def to_cupy_conditional(x, y):
     """Convert y to cupy array conditional to x being a cupy array
 
     Parameters
     ----------
-    x : :obj:`numpy.ndarray`
+    x : :obj:`numpy.ndarray` or :obj:`cupy.ndarray`
         Array to evaluate
     y : :obj:`numpy.ndarray`
         Array to convert
 
     Returns
     -------
-    y : :obj:`numpy.ndarray`
+    y : :obj:`cupy.ndarray`
         Converted array
 
     """
