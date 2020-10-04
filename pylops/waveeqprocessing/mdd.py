@@ -8,6 +8,7 @@ from scipy.signal import filtfilt
 from pylops import Diagonal, Identity, Transpose
 from pylops.signalprocessing import FFT, Fredholm1
 from pylops.utils import dottest as Dottest
+from pylops.optimization.solver import cgls
 from pylops.optimization.leastsquares import PreconditionedInversion
 
 from pylops.utils.backend import get_array_module, get_module_name, \
