@@ -6,7 +6,7 @@ from scipy.sparse.linalg import lsqr
 from pylops.utils import dottest as Dottest
 from pylops import Diagonal, Identity, Block, BlockDiag
 from pylops.signalprocessing import FFT2D, FFTND
-from pylops.utils.backend import get_module, get_module_name
+from pylops.utils.backend import get_module, get_module_name, get_array_module
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.WARNING)
 
