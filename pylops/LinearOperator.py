@@ -654,10 +654,11 @@ class _ColumnLinearOperator(LinearOperator):
             self.Opcol = Op.A[:, cols]
 
     def _matvec(self, x):
+        ncp = get_array_module(x)
         if self.explicit:
             y = self.Opcol @ x
         else:
-            y = np.zeros(self.Op.shape[1], dtype=self.dtype)
+            y = ncp.zeros(self.Op.shape[1], dtype=self.dtype)
             y[self.cols] = x
             y = self.Op._matvec(y)
         return y
