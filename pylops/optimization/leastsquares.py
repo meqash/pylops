@@ -326,7 +326,7 @@ def RegularizedInversion(Op, Regs, data, Weight=None, dataregs=None,
                                                 **kwargs_solver)[0:5]
     else:
         xinv, istop, itn, r1norm, r2norm = \
-            cgls(RegOp, datatot, ncp.zeros(RegOp.shape[1]),
+            cgls(RegOp, datatot, ncp.zeros(RegOp.shape[1], dtype=RegOp.dtype),
                  **kwargs_solver)[0:5]
     if x0 is not None:
         xinv = x0 + xinv
@@ -414,7 +414,7 @@ def PreconditionedInversion(Op, P, data, x0=None, returninfo=False,
             lsqr(POp, data, **kwargs_solver)[0:5]
     else:
         pinv, istop, itn, r1norm, r2norm = \
-            cgls(POp, data, ncp.zeros(int(POp.shape[1])),
+            cgls(POp, data, ncp.zeros(int(POp.shape[1]), dtype=POp.dtype),
                  **kwargs_solver)[0:5]
     xinv = P * pinv
     if x0 is not None:
