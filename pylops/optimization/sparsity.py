@@ -261,7 +261,7 @@ def _IRLS_model(Op, data, nouter, threshR=False, epsR=1e-10,
                lsqr(Op @ Op.H + (epsI ** 2) * Iop, data, **kwargs_solver)[0]
     else:
         xinv = Op.H @ cgls(Op @ Op.H + (epsI ** 2) * Iop, data,
-                           ncp.zeros(Op.shape[0], dtype=Op.dtype),
+                           ncp.zeros(int(Op.shape[0]), dtype=Op.dtype),
                            **kwargs_solver)[0]
     if returnhistory:
         xinv_hist[0] = xinv
@@ -277,7 +277,7 @@ def _IRLS_model(Op, data, nouter, threshR=False, epsR=1e-10,
         else:
             xinv = R @ Op.H @ cgls(Op @ R @ Op.H + epsI ** 2 * Iop,
                                    data,
-                                   ncp.zeros(Op.shape[0], dtype=Op.dtype),
+                                   ncp.zeros(int(Op.shape[0]), dtype=Op.dtype),
                                    **kwargs_solver)[0]
         # save history
         if returnhistory:
@@ -593,7 +593,7 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
             if iiter < 10 or niter_outer - iiter < 10 or iiter % 10 == 0:
                 msg = '%6g        %12.5e' % (iiter + 1, cost[iiter])
                 print(msg)
-    xinv = ncp.zeros(Op.shape[1], dtype=Op.dtype)
+    xinv = ncp.zeros(int(Op.shape[1]), dtype=Op.dtype)
     xinv[cols] = ncp.array(x)
     if show:
         print('\nIterations = %d        Total time (s) = %.2f'
