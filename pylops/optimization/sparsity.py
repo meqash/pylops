@@ -187,6 +187,7 @@ def _halfthreshold_percentile(x, perc):
     #return _halfthreshold(x, (2. / 3. * thresh) ** (1.5))
     return _halfthreshold(x, (4. / 54 ** (1. / 3.) * thresh) ** 1.5)
 
+
 def _IRLS_data(Op, data, nouter, threshR=False, epsR=1e-10,
                epsI=1e-10, x0=None, tolIRLS=1e-10,
                returnhistory=False, **kwargs_solver):
@@ -245,15 +246,23 @@ def _IRLS_model(Op, data, nouter, threshR=False, epsR=1e-10,
                 returnhistory=False, **kwargs_solver):
     r"""Iteratively reweighted least squares with L1 model term
     """
+    ncp = get_array_module(data)
+
     if x0 is not None:
         data = data - Op * x0
     if returnhistory:
-        xinv_hist = np.zeros((nouter + 1, Op.shape[1]))
-        rw_hist = np.zeros((nouter + 1, Op.shape[0]))
+        xinv_hist = ncp.zeros((nouter + 1, Op.shape[1]))
+        rw_hist = ncp.zeros((nouter + 1, Op.shape[0]))
 
     Iop = Identity(data.size, dtype=data.dtype)
     # first iteration (unweighted least-squares)
-    xinv = Op.H @ lsqr(Op @ Op.H + (epsI**2) * Iop, data, **kwargs_solver)[0]
+    if ncp == np:
+        xinv = Op.H @ \
+               lsqr(Op @ Op.H + (epsI ** 2) * Iop, data, **kwargs_solver)[0]
+    else:
+        xinv = Op.H @ cgls(Op @ Op.H + (epsI ** 2) * Iop, data,
+                           ncp.zeros(Op.shape[0], dtype=Op.dtype),
+                           **kwargs_solver)[0]
     if returnhistory:
         xinv_hist[0] = xinv
     for iiter in range(nouter):
@@ -262,8 +271,14 @@ def _IRLS_model(Op, data, nouter, threshR=False, epsR=1e-10,
         rw = np.abs(xinv)
         rw = rw / rw.max()
         R = Diagonal(rw, dtype=rw.dtype)
-        xinv = R @ Op.H @ lsqr(Op @ R @ Op.H + epsI**2 * Iop,
-                               data, **kwargs_solver)[0]
+        if ncp == np:
+            xinv = R @ Op.H @ lsqr(Op @ R @ Op.H + epsI ** 2 * Iop,
+                                   data, **kwargs_solver)[0]
+        else:
+            xinv = R @ Op.H @ cgls(Op @ R @ Op.H + epsI ** 2 * Iop,
+                                   data,
+                                   ncp.zeros(Op.shape[0], dtype=Op.dtype),
+                                   **kwargs_solver)[0]
         # save history
         if returnhistory:
             rw_hist[iiter] = rw
@@ -332,7 +347,9 @@ def IRLS(Op, data, nouter, threshR=False, epsR=1e-10,
     **kwargs_solver
         Arbitrary keyword arguments for
         :py:func:`scipy.sparse.linalg.cg` solver for data IRLS and
-        :py:func:`scipy.sparse.linalg.lsqr` solver for model IRLS
+        :py:func:`scipy.sparse.linalg.lsqr` solver for model IRLS when using
+        numpy data(or :py:func:`pylops.optimization.solver.cg` and
+        :py:func:`pylops.optimization.solver.cgls` when using cupy data)
 
     Returns
     -------
