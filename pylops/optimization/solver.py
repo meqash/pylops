@@ -95,8 +95,12 @@ def cg(Op, y, x0, niter=10, damp=0., tol=1e-4,
 
         if show:
             if iiter < 10 or niter - iiter < 10 or iiter % 10 == 0:
-                msg = '%6g        %11.4e        %11.4e' % \
-                      (iiter, x[0], cost[iiter])
+                if not np.iscomplex(x[0]):
+                    msg = '%6g        %11.4e        %11.4e' % \
+                          (iiter, x[0], cost[iiter])
+                else:
+                    msg = '%6g     %4.1e+%4.1ej     %11.4e' % \
+                          (iiter, np.real(x[0]), np.imag(x[0]), cost[iiter])
                 print(msg)
     if show:
         print('\nIterations = %d        Total time (s) = %.2f'
@@ -218,8 +222,12 @@ def cgls(Op, y, x0, niter=10, damp=0., tol=1e-4,
 
         if show:
             if iiter < 10 or niter - iiter < 10 or iiter % 10 == 0:
-                msg = '%6g        %11.4e        %11.4e' % \
-                      (iiter, x[0], cost[iiter])
+                if not np.iscomplex(x[0]):
+                    msg = '%6g        %11.4e        %11.4e' % \
+                          (iiter, x[0], cost[iiter])
+                else:
+                    msg = '%6g     %4.1e+%4.1ej     %11.4e' % \
+                          (iiter, np.real(x[0]), np.imag(x[0]), cost[iiter])
                 print(msg)
     if show:
         print('\nIterations = %d        Total time (s) = %.2f'
