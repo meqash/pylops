@@ -7,6 +7,7 @@ from pylops import LinearOperator
 from pylops.basicoperators import Diagonal, Identity
 from pylops.optimization.leastsquares import NormalEquationsInversion, \
     RegularizedInversion
+from pylops.optimization.solver import cgls
 from pylops.utils.backend import get_array_module
 
 try:
