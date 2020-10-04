@@ -955,6 +955,9 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
     else:
         threshf = _halfthreshold_percentile
 
+    # identify backend to use
+    ncp = get_array_module(data)
+
     if show:
         tstart = time.time()
         print('FISTA optimization (%s thresholding)\n'
@@ -972,7 +975,7 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
         Op1 = LinearOperator(Op.H * Op, explicit=False)
         maxeig = np.abs(Op1.eigs(neigs=1, symmetric=True, niter=eigsiter,
                                  **dict(tol=eigstol, which='LM')))[0]
-        alpha = 1./maxeig
+        alpha = 1. / maxeig
 
     # define threshold
     thresh = eps * alpha * 0.5
@@ -987,11 +990,11 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
         print(head1)
 
     # initialize model and cost function
-    xinv = np.zeros(Op.shape[1], dtype=Op.dtype)
+    xinv = ncp.zeros(int(Op.shape[1]), dtype=Op.dtype)
     zinv = xinv.copy()
     t = 1
     if returninfo:
-        cost = np.zeros(niter+1)
+        cost = np.zeros(niter + 1)
 
     # iterate
     for iiter in range(niter):
@@ -1019,8 +1022,8 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
         xupdate = np.linalg.norm(xinv - xinvold)
 
         if returninfo or show:
-            costdata = 0.5*np.linalg.norm(data - Op.matvec(xinv))**2
-            costreg = eps*np.linalg.norm(xinv, ord=1)
+            costdata = 0.5 * np.linalg.norm(data - Op.matvec(xinv)) ** 2
+            costreg = eps * np.linalg.norm(xinv, ord=1)
         if returninfo:
             cost[iiter] = costdata + costreg
 
@@ -1029,9 +1032,9 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
             callback(xinv)
 
         if show:
-            if iiter < 10 or niter-iiter < 10 or iiter % 10 == 0:
+            if iiter < 10 or niter - iiter < 10 or iiter % 10 == 0:
                 msg = '%6g  %12.5e  %10.3e   %9.3e  %10.3e' % \
-                      (iiter+1, xinv[0], costdata, costdata+costreg, xupdate)
+                      (iiter + 1, xinv[0], costdata, costdata + costreg, xupdate)
                 print(msg)
 
         # check tolerance
