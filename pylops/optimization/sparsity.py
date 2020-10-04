@@ -7,6 +7,7 @@ from pylops import LinearOperator
 from pylops.basicoperators import Diagonal, Identity
 from pylops.optimization.leastsquares import NormalEquationsInversion, \
     RegularizedInversion
+from pylops.utils.backend import get_array_module
 
 try:
     from spgl1 import spgl1
@@ -494,6 +495,8 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
     between the basis is generally properly handled.
 
     """
+    ncp = get_array_module(data)
+
     Op = LinearOperator(Op)
     if show:
         tstart = time.time()
@@ -508,9 +511,9 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
     # find normalization factor for each column
     if normalizecols:
         ncols = Op.shape[1]
-        norms = np.zeros(ncols)
+        norms = ncp.zeros(ncols)
         for icol in range(ncols):
-            unit = np.zeros(ncols, dtype=Op.dtype)
+            unit = ncp.zeros(ncols, dtype=Op.dtype)
             unit[icol] = 1
             norms[icol] = np.linalg.norm(Op.matvec(unit))
     if show:
@@ -522,7 +525,7 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
         x = []
     cols = []
     res = data.copy()
-    cost = np.zeros(niter_outer + 1)
+    cost = ncp.zeros(niter_outer + 1)
     cost[0] = np.linalg.norm(data)
     iiter = 0
     while iiter < niter_outer and cost[iiter] > sigma:
@@ -542,7 +545,7 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
         # update active set
         if imax not in cols:
             addnew = True
-            cols.append(imax)
+            cols.append(int(imax))
         else:
             addnew = False
             imax_in_cols = cols.index(imax)
@@ -550,8 +553,8 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
         # estimate model for current set of columns
         if niter_inner == 0:
             # MP update
-            Opcol = Op.apply_columns([imax, ])
-            res -= Opcol.matvec(cres[imax] * np.ones(1))
+            Opcol = Op.apply_columns([int(imax), ])
+            res -= Opcol.matvec(cres[imax] * ncp.ones(1))
             if addnew:
                 x.append(cres[imax])
             else:
@@ -559,7 +562,12 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
         else:
             # OMP update
             Opcol = Op.apply_columns(cols)
-            x = lsqr(Opcol, data, iter_lim=niter_inner)[0]
+            if ncp == np:
+                x = lsqr(Opcol, data, iter_lim=niter_inner)[0]
+            else:
+                x = cgls(Opcol, data, ncp.zeros(int(Opcol.shape[1]),
+                                                dtype=Opcol.dtype),
+                         niter=niter_inner)[0]
             res = data - Opcol.matvec(x)
         iiter += 1
         cost[iiter] = np.linalg.norm(res)
@@ -567,12 +575,13 @@ def OMP(Op, data, niter_outer=10, niter_inner=40, sigma=1e-4,
             if iiter < 10 or niter_outer - iiter < 10 or iiter % 10 == 0:
                 msg = '%6g        %12.5e' % (iiter + 1, cost[iiter])
                 print(msg)
-    xinv = np.zeros(Op.shape[1], dtype=Op.dtype)
-    xinv[cols] = np.array(x)
+    xinv = ncp.zeros(Op.shape[1], dtype=Op.dtype)
+    xinv[cols] = ncp.array(x)
     if show:
         print('\nIterations = %d        Total time (s) = %.2f'
               % (iiter, time.time() - tstart))
-        print('-----------------------------------------------------------------\n')
+        print(
+            '-----------------------------------------------------------------\n')
     return xinv, iiter, cost
 
 
@@ -707,6 +716,9 @@ def ISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
     else:
         threshf = _halfthreshold_percentile
 
+    # identify backend to use
+    ncp = get_array_module(data)
+
     if show:
         tstart = time.time()
         print('ISTA optimization (%s thresholding)\n'
@@ -739,7 +751,7 @@ def ISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
         print(head1)
 
     # initialize model and cost function
-    xinv = np.zeros(Op.shape[1], dtype=Op.dtype)
+    xinv = ncp.zeros(int(Op.shape[1]), dtype=Op.dtype)
     if monitorres:
         normresold = np.inf
     if returninfo:
