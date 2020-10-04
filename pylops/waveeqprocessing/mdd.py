@@ -12,7 +12,7 @@ from pylops.optimization.solver import cgls
 from pylops.optimization.leastsquares import PreconditionedInversion
 
 from pylops.utils.backend import get_array_module, get_module_name, \
-    get_fftconvolve
+    get_fftconvolve, to_cupy_conditional
 
 
 def _MDC(G, nt, nv, dt=1., dr=1., twosided=True, fast=None, dtype=None,
@@ -397,7 +397,7 @@ def MDD(G, d, dt=0.004, dr=1., nfmax=None, wav=None,
         P[:nt - 1] = 0
         if smooth_precond > 0:
             P = filtfilt(np.ones(smooth_precond)/smooth_precond, 1, P, axis=0)
-            P = to_cupy_conditional(d, P)
+        P = to_cupy_conditional(d, P)
         Pop = Diagonal(P)
         minv = PreconditionedInversion(MDCop, Pop, d.flatten(),
                                        returninfo=False, **kwargs_solver)
