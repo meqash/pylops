@@ -186,7 +186,7 @@ def _obliquity3D(nt, nr, dt, dr, rho, vel, nffts, critical=100., ntaper=10,
 
 def PressureToVelocity(nt, nr, dt, dr, rho, vel, nffts=(None, None, None),
                        critical=100., ntaper=10, topressure=False,
-                       dtype='complex128'):
+                       backend='numpy', dtype='complex128'):
     r"""Pressure to Vertical velocity conversion.
 
     Apply conversion from pressure to vertical velocity seismic wavefield
@@ -221,6 +221,9 @@ def PressureToVelocity(nt, nr, dt, dr, rho, vel, nffts=(None, None, None),
     topressure : :obj:`bool`, optional
         Perform conversion from particle velocity to pressure (``True``)
         or from pressure to particle velocity (``False``)
+    backend : :obj:`str`, optional
+        Backend used for creation of obliquity factor operator
+        (``numpy`` or ``cupy``)
     dtype : :obj:`str`, optional
         Type of elements in input array.
 
@@ -283,7 +286,7 @@ def PressureToVelocity(nt, nr, dt, dr, rho, vel, nffts=(None, None, None),
     FFTop, OBLop, = \
         obl(nt, nr, dt, dr, rho, vel, nffts=nffts,
             critical=critical, ntaper=ntaper, composition=not topressure,
-            dtype=dtype)
+            backend=backend, dtype=dtype)
 
     # create conversion operator
     Cop = FFTop.H * OBLop * FFTop
