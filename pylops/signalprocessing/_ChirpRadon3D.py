@@ -1,6 +1,11 @@
 import numpy as np
-import pyfftw
+
 from pylops.utils.backend import get_array_module
+
+try:
+    import pyfftw
+except:
+    pyfftw = None
 
 
 def _chirp_radon_3d(data, dt, dx1, dx2, pmax, mode='f'):
