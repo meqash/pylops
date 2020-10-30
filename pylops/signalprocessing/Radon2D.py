@@ -173,6 +173,7 @@ def Radon2D(taxis, haxis, pxaxis, kind='linear', centeredh=True,
     forward is implemented as spreading of values in the data vector along the
     same parametric curves. This operator is actually a thin wrapper around
     the :class:`pylops.Spread` operator.
+
     """
     # engine
     if not engine in ['numpy', 'numba']:

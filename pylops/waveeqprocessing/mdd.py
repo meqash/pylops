@@ -130,7 +130,8 @@ def MDC(G, nt, nv, dt=1., dr=1., twosided=True, fast=None,
         :math:`[n_s \times n_r \times n_{fmax}]` if ``transpose=True``
         or size :math:`[n_{fmax} \times n_s \times n_r]` if ``transpose=False``
     nt : :obj:`int`
-        Number of samples along time axis
+        Number of samples along time axis for model and data (note that this
+        must be equal to ``2*n_t-1`` when working with ``twosided=True``.
     nv : :obj:`int`
         Number of samples along virtual source axis
     dt : :obj:`float`, optional
@@ -239,10 +240,10 @@ def MDD(G, d, dt=0.004, dr=1., nfmax=None, wav=None,
         ``add_negative=False``
         (with both positive and negative times)
     d : :obj:`numpy.ndarray`
-        Data in time domain :math:`[n_s (\times n_vs) \times n_t]` if
+        Data in time domain :math:`[n_s (\times n_{vs}) \times n_t]` if
         ``twosided=False`` or ``twosided=True`` and ``add_negative=True``
         (with only positive times) or size
-        :math:`[n_s (\times n_vs) \times 2*n_t-1]` if ``twosided=True``
+        :math:`[n_s (\times n_{vs}) \times 2*n_t-1]` if ``twosided=True``
     dt : :obj:`float`, optional
         Sampling of time integration axis
     dr : :obj:`float`, optional
@@ -262,6 +263,8 @@ def MDD(G, d, dt=0.004, dr=1., nfmax=None, wav=None,
         and negative sides. To be used only with ``twosided=True``.
     causality_precond : :obj:`bool`, optional
         Apply causality mask (``True``) or not (``False``)
+    smooth_precond : :obj:`int`, optional
+        Lenght of smoothing to apply to causality preconditioner
     adjoint : :obj:`bool`, optional
         Compute and return adjoint(s)
     psf : :obj:`bool`, optional

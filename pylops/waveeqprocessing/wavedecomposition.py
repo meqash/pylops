@@ -692,7 +692,6 @@ def WavefieldDecomposition(p, vz, nt, nr, dt, dr, rho, vel,
                     complexflag=2, backend=backend, verb=True)
 
         # separation by inversion
-        print(type(d))
         dud = solver(UDop, d.ravel(), **kwargs_solver)[0]
         if sptransf is None:
             dud = np.real(dud)

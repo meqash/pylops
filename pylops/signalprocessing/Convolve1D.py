@@ -1,6 +1,6 @@
 import numpy as np
 from pylops import LinearOperator
-from pylops.utils.backend import get_array_module, get_convolve, \
+from pylops.utils.backend import get_convolve, \
     get_fftconvolve, get_oaconvolve, to_cupy_conditional
 
 

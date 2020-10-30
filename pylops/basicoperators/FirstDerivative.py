@@ -16,7 +16,7 @@ class FirstDerivative(LinearOperator):
         Number of samples for each dimension
         (``None`` if only one dimension is available)
     dir : :obj:`int`, optional
-        Direction along which smoothing is applied.
+        Direction along which the derivative is applied.
     sampling : :obj:`float`, optional
         Sampling step ``dx``.
     edge : :obj:`bool`, optional

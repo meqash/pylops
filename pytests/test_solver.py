@@ -43,7 +43,7 @@ def test_cg(par):
         x0 = np.zeros_like(x)
 
     y = Aop * x
-    xinv = cg(Aop, y, x0=x0, niter=par['nx'], tol=1e-5, show=False)[0]
+    xinv = cg(Aop, y, x0=x0, niter=par['nx'], tol=1e-5, show=True)[0]
     assert_array_almost_equal(x, xinv, decimal=4)
 
 
@@ -66,5 +66,5 @@ def test_cgls(par):
         x0 = np.zeros_like(x)
 
     y = Aop * x
-    xinv = cgls(Aop, y, x0=x0, niter=par['nx'], tol=1e-5, show=False)[0]
+    xinv = cgls(Aop, y, x0=x0, niter=par['nx'], tol=1e-5, show=True)[0]
     assert_array_almost_equal(x, xinv, decimal=4)
