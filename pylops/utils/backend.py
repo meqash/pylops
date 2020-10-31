@@ -4,6 +4,7 @@ from pylops.utils import deps
 
 if deps.cupy_enabled:
     import cupy as cp
+    import cupyx
 
 if deps.cusignal_enabled:
     import cusignal
@@ -158,6 +159,49 @@ def get_oaconvolve(x):
         raise NotImplementedError('oaconvolve not implemented in '
                                   'cupy/cusignal. Consider using a different'
                                   'option...')
+
+
+def get_add_at(x):
+    """Returns correct add.at module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return np.add.at
+
+    if cp.get_array_module(x) == np:
+        return np.add.at
+    else:
+        return cupyx.scatter_add
+
+
+def to_numpy_conditional(x):
+    """Convert x to numpy array
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray` or :obj:`cupy.ndarray`
+        Array to evaluate
+
+    Returns
+    -------
+    x : :obj:`cupy.ndarray`
+        Converted array
+
+    """
+    if deps.cupy_enabled:
+        if cp.get_array_module(x) == cp:
+            x = cp.asnumpy(x)
+    return x
 
 
 def to_cupy_conditional(x, y):
