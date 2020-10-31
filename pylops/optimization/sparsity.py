@@ -195,11 +195,13 @@ def _IRLS_data(Op, data, nouter, threshR=False, epsR=1e-10,
                returnhistory=False, **kwargs_solver):
     r"""Iteratively reweighted least squares with L1 data term
     """
+    ncp = get_array_module(data)
+
     if x0 is not None:
         data = data - Op * x0
     if returnhistory:
-        xinv_hist = np.zeros((nouter + 1, Op.shape[1]))
-        rw_hist = np.zeros((nouter + 1, Op.shape[0]))
+        xinv_hist = ncp.zeros((nouter + 1, Op.shape[1]))
+        rw_hist = ncp.zeros((nouter + 1, Op.shape[0]))
 
     # first iteration (unweighted least-squares)
     xinv = NormalEquationsInversion(Op, None, data, epsI=epsI,
@@ -212,9 +214,9 @@ def _IRLS_data(Op, data, nouter, threshR=False, epsR=1e-10,
         # other iterations (weighted least-squares)
         xinvold = xinv.copy()
         if threshR:
-            rw = 1. / np.maximum(np.abs(r), epsR)
+            rw = 1. / ncp.maximum(ncp.abs(r), epsR)
         else:
-            rw = 1. / (np.abs(r) + epsR)
+            rw = 1. / (ncp.abs(r) + epsR)
         rw = rw / rw.max()
         R = Diagonal(rw)
         xinv = NormalEquationsInversion(Op, [], data, Weight=R,
@@ -227,7 +229,7 @@ def _IRLS_data(Op, data, nouter, threshR=False, epsR=1e-10,
             rw_hist[iiter] = rw
             xinv_hist[iiter + 1] = xinv
         # check tolerance
-        if np.linalg.norm(xinv - xinvold) < tolIRLS:
+        if ncp.linalg.norm(xinv - xinvold) < tolIRLS:
             nouter = iiter
             break
 
