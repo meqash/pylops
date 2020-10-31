@@ -8,7 +8,9 @@ from pylops.basicoperators import Diagonal, Identity
 from pylops.optimization.leastsquares import NormalEquationsInversion, \
     RegularizedInversion
 from pylops.optimization.solver import cgls
-from pylops.utils.backend import get_array_module
+from pylops.optimization.eigs import power_iteration
+from pylops.utils.backend import get_array_module, get_module_name
+
 
 try:
     from spgl1 import spgl1
@@ -752,8 +754,13 @@ def ISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
             Op = LinearOperator(Op, explicit=False)
         # compute largest eigenvalues of Op^H * Op
         Op1 = LinearOperator(Op.H * Op, explicit=False)
-        maxeig = np.abs(Op1.eigs(neigs=1, symmetric=True, niter=eigsiter,
-                                 **dict(tol=eigstol, which='LM')))[0]
+        if get_module_name(ncp) == 'numpy':
+            maxeig = np.abs(Op1.eigs(neigs=1, symmetric=True, niter=eigsiter,
+                                     **dict(tol=eigstol, which='LM'))[0])
+        else:
+            maxeig = np.abs(power_iteration(Op1, niter=eigsiter,
+                                            tol=eigstol, dtype=Op1.dtype,
+                                            backend='cupy')[0])
         alpha = 1./maxeig
 
     # define threshold
@@ -973,8 +980,13 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
             Op = LinearOperator(Op, explicit=False)
         # compute largest eigenvalues of Op^H * Op
         Op1 = LinearOperator(Op.H * Op, explicit=False)
-        maxeig = np.abs(Op1.eigs(neigs=1, symmetric=True, niter=eigsiter,
-                                 **dict(tol=eigstol, which='LM')))[0]
+        if get_module_name(ncp) == 'numpy':
+            maxeig = np.abs(Op1.eigs(neigs=1, symmetric=True, niter=eigsiter,
+                                     **dict(tol=eigstol, which='LM')))[0]
+        else:
+            maxeig = np.abs(power_iteration(Op1, niter=eigsiter,
+                                            tol=eigstol, dtype=Op1.dtype,
+                                            backend='cupy')[0])
         alpha = 1. / maxeig
 
     # define threshold
