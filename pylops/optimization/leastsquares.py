@@ -102,8 +102,7 @@ def NormalEquationsInversion(Op, Regs, data, Weight=None, dataregs=None,
 
     # create dataregs and epsRs if not provided
     if dataregs is None and Regs is not None:
-        dataregs = [ncp.zeros(Reg.shape[0]) for Reg in Regs]
-
+        dataregs = [ncp.zeros(int(Reg.shape[0]), dtype=Reg.dtype) for Reg in Regs]
     if epsRs is None and Regs is not None:
         epsRs = [1] * len(Regs)
 
@@ -119,7 +118,8 @@ def NormalEquationsInversion(Op, Regs, data, Weight=None, dataregs=None,
 
     # Add regularization terms
     if epsI > 0:
-        Op_normal += epsI ** 2 * Diagonal(ncp.ones(Op.shape[1]))
+        Op_normal += epsI ** 2 * Diagonal(ncp.ones(int(Op.shape[1]),
+                                                   dtype=Op.dtype))
 
     if Regs is not None:
         for epsR, Reg, datareg in zip(epsRs, Regs, dataregs):
@@ -133,11 +133,12 @@ def NormalEquationsInversion(Op, Regs, data, Weight=None, dataregs=None,
 
     # solver
     if x0 is not None:
-        y_normal = y_normal - Op_normal*x0
+        y_normal = y_normal - Op_normal * x0
     if ncp == np:
         xinv, istop = sp_cg(Op_normal, y_normal, **kwargs_solver)
     else:
-        xinv = cg(Op_normal, y_normal, ncp.zeros(Op_normal.shape[1]),
+        xinv = cg(Op_normal, y_normal,
+                  ncp.zeros(int(Op_normal.shape[1]), dtype=Op_normal.dtype),
                   **kwargs_solver)[0]
         istop = None
     if x0 is not None:
@@ -289,7 +290,7 @@ def RegularizedInversion(Op, Regs, data, Weight=None, dataregs=None,
 
     # create regularization data
     if dataregs is None and Regs is not None:
-        dataregs = [np.zeros(Reg.shape[0]) for Reg in Regs]
+        dataregs = [ncp.zeros(int(Reg.shape[0]), dtype=Reg.dtype) for Reg in Regs]
 
     if epsRs is None and Regs is not None:
         epsRs = [1] * len(Regs)
@@ -326,7 +327,7 @@ def RegularizedInversion(Op, Regs, data, Weight=None, dataregs=None,
                                                 **kwargs_solver)[0:5]
     else:
         xinv, istop, itn, r1norm, r2norm = \
-            cgls(RegOp, datatot, ncp.zeros(RegOp.shape[1], dtype=RegOp.dtype),
+            cgls(RegOp, datatot, ncp.zeros(int(RegOp.shape[1]), dtype=RegOp.dtype),
                  **kwargs_solver)[0:5]
     if x0 is not None:
         xinv = x0 + xinv
