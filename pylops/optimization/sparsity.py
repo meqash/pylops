@@ -200,8 +200,8 @@ def _IRLS_data(Op, data, nouter, threshR=False, epsR=1e-10,
     if x0 is not None:
         data = data - Op * x0
     if returnhistory:
-        xinv_hist = ncp.zeros((nouter + 1, Op.shape[1]))
-        rw_hist = ncp.zeros((nouter + 1, Op.shape[0]))
+        xinv_hist = ncp.zeros((nouter + 1, int(Op.shape[1])))
+        rw_hist = ncp.zeros((nouter + 1, int(Op.shape[0])))
 
     # first iteration (unweighted least-squares)
     xinv = NormalEquationsInversion(Op, None, data, epsI=epsI,
@@ -255,8 +255,8 @@ def _IRLS_model(Op, data, nouter, threshR=False, epsR=1e-10,
     if x0 is not None:
         data = data - Op * x0
     if returnhistory:
-        xinv_hist = ncp.zeros((nouter + 1, Op.shape[1]))
-        rw_hist = ncp.zeros((nouter + 1, Op.shape[0]))
+        xinv_hist = ncp.zeros((nouter + 1, int(Op.shape[1])))
+        rw_hist = ncp.zeros((nouter + 1, int(Op.shape[0])))
 
     Iop = Identity(data.size, dtype=data.dtype)
     # first iteration (unweighted least-squares)
@@ -1308,6 +1308,8 @@ def SplitBregman(Op, RegsL1, data, niter_outer=3, niter_inner=5, RegsL2=None,
        pp. 323-343. 2008.
 
     """
+    ncp = get_array_module(data)
+
     if show:
         tstart = time.time()
         print('Split-Bregman optimization\n'
@@ -1324,7 +1326,7 @@ def SplitBregman(Op, RegsL1, data, niter_outer=3, niter_inner=5, RegsL2=None,
 
     # L1 regularizations
     nregsL1 = len(RegsL1)
-    b = [np.zeros(RegL1.shape[0]) for RegL1 in RegsL1]
+    b = [ncp.zeros(RegL1.shape[0], dtype=Op.dtype) for RegL1 in RegsL1]
     d = b.copy()
 
     # L2 regularizations
@@ -1332,7 +1334,7 @@ def SplitBregman(Op, RegsL1, data, niter_outer=3, niter_inner=5, RegsL2=None,
     if nregsL2 > 0:
         Regs = RegsL2 + RegsL1
         if dataregsL2 is None:
-            dataregsL2 = [np.zeros(Reg.shape[0]) for Reg in RegsL2]
+            dataregsL2 = [ncp.zeros(Reg.shape[0], dtype=Op.dtype) for Reg in RegsL2]
     else:
         Regs = RegsL1
         dataregsL2 = []
@@ -1342,11 +1344,11 @@ def SplitBregman(Op, RegsL1, data, niter_outer=3, niter_inner=5, RegsL2=None,
              range(nregsL2)] + \
             [np.sqrt(epsRL1s[ireg] / 2) / np.sqrt(mu / 2) for ireg in
              range(nregsL1)]
-    xinv = np.zeros_like(np.zeros(Op.shape[1])) if x0 is None else x0
-    xold = np.inf * np.ones_like(np.zeros(Op.shape[1]))
+    xinv = ncp.zeros(Op.shape[1], dtype=Op.dtype) if x0 is None else x0
+    xold = ncp.full(Op.shape[1], ncp.inf, dtype=Op.dtype)
 
     itn_out = 0
-    while np.linalg.norm(xinv - xold) > tol and itn_out < niter_outer:
+    while ncp.linalg.norm(xinv - xold) > tol and itn_out < niter_outer:
         xold = xinv
         for _ in range(niter_inner):
             # Regularized problem
@@ -1366,16 +1368,16 @@ def SplitBregman(Op, RegsL1, data, niter_outer=3, niter_inner=5, RegsL2=None,
         itn_out += 1
 
         if show:
-            costdata = mu/2. * np.linalg.norm(data - Op.matvec(xinv)) ** 2
+            costdata = mu/2. * ncp.linalg.norm(data - Op.matvec(xinv)) ** 2
             costregL2 = 0 if RegsL2 is None else \
-                [epsRL2 * np.linalg.norm(dataregL2 - RegL2.matvec(xinv)) ** 2
+                [epsRL2 * ncp.linalg.norm(dataregL2 - RegL2.matvec(xinv)) ** 2
                  for epsRL2, RegL2, dataregL2 in zip(epsRL2s, RegsL2, dataregsL2)]
-            costregL1 = [np.linalg.norm(RegL1.matvec(xinv), ord=1)
+            costregL1 = [ncp.linalg.norm(RegL1.matvec(xinv), ord=1)
                          for epsRL1, RegL1 in zip(epsRL1s, RegsL1)]
-            cost = costdata + np.sum(np.array(costregL2)) + \
-                   np.sum(np.array(costregL1))
+            cost = costdata + ncp.sum(ncp.array(costregL2)) + \
+                   ncp.sum(ncp.array(costregL1))
             msg = '%6g  %12.5e       %10.3e        %9.3e' % \
-                  (np.abs(itn_out), xinv[0], costdata, cost)
+                  (ncp.abs(itn_out), ncp.real(xinv[0]), costdata, cost)
             print(msg)
 
     if show:
