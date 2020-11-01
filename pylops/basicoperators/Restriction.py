@@ -140,7 +140,7 @@ class Restriction(LinearOperator):
                 ncp.put_along_axis(y, ncp.reshape(self.iava, self.iavareshape),
                                    x, axis=self.dir)
             else:
-                if not isinstance(self, 'iavamask'):
+                if not hasattr(self, 'iavamask'):
                     self.iavamask = _compute_iavamask(self.dims, self.dir,
                                                       self.iava, ncp)
                 y = ncp.zeros(int(self.M), dtype=self.dtype)
