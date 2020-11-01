@@ -93,7 +93,8 @@ class Restriction(LinearOperator):
 
     def _matvec(self, x):
         ncp = get_array_module(x)
-        if not self.inplace: x = x.copy()
+        if not self.inplace:
+            x = x.copy()
         if not self.reshape:
             y = x[self.iava]
         else:
@@ -104,7 +105,8 @@ class Restriction(LinearOperator):
 
     def _rmatvec(self, x):
         ncp = get_array_module(x)
-        if not self.inplace: x = x.copy()
+        if not self.inplace:
+            x = x.copy()
         if not self.reshape:
             y = ncp.zeros(self.dims, dtype=self.dtype)
             y[self.iava] = x
@@ -112,7 +114,7 @@ class Restriction(LinearOperator):
             x = ncp.reshape(x, self.dimsd)
             y = ncp.zeros(self.dims, dtype=self.dtype)
             ncp.put_along_axis(y, ncp.reshape(self.iava, self.iavareshape),
-                              x, axis=self.dir)
+                               x, axis=self.dir)
             y = y.ravel()
         return y
 
@@ -133,7 +135,10 @@ class Restriction(LinearOperator):
         """
         ncp = get_array_module(x)
         if ncp != np:
-          iava = ncp.asnumpy(self.iava)
+            iava = ncp.asnumpy(self.iava)
+        else:
+            iava = self.iava.copy()
+
         y = np_ma.array(np.zeros(self.dims), mask=np.ones(self.dims),
                         dtype=self.dtype)
         if self.reshape:
@@ -142,9 +147,9 @@ class Restriction(LinearOperator):
             y = np.swapaxes(y, self.dir, 0)
         y.mask[iava] = False
         if ncp == np:
-          y[iava] = x[self.iava]
+            y[iava] = x[self.iava]
         else:
-          y[iava] = ncp.asnumpy(x)[iava]
+            y[iava] = ncp.asnumpy(x)[iava]
         if self.reshape:
             y = np.swapaxes(y, 0, self.dir)
         return y
