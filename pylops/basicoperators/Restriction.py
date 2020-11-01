@@ -122,7 +122,7 @@ class Restriction(LinearOperator):
 
         Parameters
         ----------
-        x : :obj:`numpy.ndarray`
+        x : :obj:`numpy.ndarray` or :obj:`cupy.ndarray`
             Input array (can be either flattened or not)
 
         Returns
@@ -132,17 +132,19 @@ class Restriction(LinearOperator):
 
         """
         ncp = get_array_module(x)
+        if ncp != np:
+          iava = ncp.asnumpy(self.iava)
         y = np_ma.array(np.zeros(self.dims), mask=np.ones(self.dims),
                         dtype=self.dtype)
         if self.reshape:
             x = np.reshape(x, self.dims)
             x = np.swapaxes(x, self.dir, 0)
             y = np.swapaxes(y, self.dir, 0)
-        y.mask[self.iava] = False
+        y.mask[iava] = False
         if ncp == np:
-          y[self.iava] = x[self.iava]
+          y[iava] = x[self.iava]
         else:
-          y[self.iava] = ncp.asnumpy(x)[self.iava]
+          y[iava] = ncp.asnumpy(x)[iava]
         if self.reshape:
             y = np.swapaxes(y, 0, self.dir)
         return y
