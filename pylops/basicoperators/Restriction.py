@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.ma as np_ma
 from pylops import LinearOperator
-from pylops.utils.backend import get_array_module
+from pylops.utils.backend import get_array_module, to_cupy_conditional
 
 
 def _compute_iavamask(dims, dir, iava, ncp):
@@ -141,6 +141,7 @@ class Restriction(LinearOperator):
                                    x, axis=self.dir)
             else:
                 if not hasattr(self, 'iavamask'):
+                    self.iava = to_cupy_conditional(x, self.iava)
                     self.iavamask = _compute_iavamask(self.dims, self.dir,
                                                       self.iava, ncp)
                 y = ncp.zeros(int(self.M), dtype=self.dtype)

@@ -1,6 +1,6 @@
 import numpy as np
 from pylops import LinearOperator
-from pylops.utils.backend import get_array_module
+from pylops.utils.backend import get_array_module, to_cupy_conditional
 
 
 class Diagonal(LinearOperator):
@@ -72,6 +72,8 @@ class Diagonal(LinearOperator):
         self.explicit = False
 
     def _matvec(self, x):
+        if type(self.diag) != type(x):
+            self.diag = to_cupy_conditional(x, self.diag)
         if not self.reshape:
             y = self.diag * x.ravel()
         else:
@@ -80,6 +82,8 @@ class Diagonal(LinearOperator):
         return y.ravel()
 
     def _rmatvec(self, x):
+        if type(self.diag) != type(x):
+            self.diag = to_cupy_conditional(x, self.diag)
         if self.complex:
             diagadj = self.diag.conj()
         else:
