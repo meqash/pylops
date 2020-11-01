@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.signal import convolve, fftconvolve, oaconvolve
+from scipy.signal import convolve, correlate, fftconvolve, oaconvolve
 from pylops.utils import deps
 
 if deps.cupy_enabled:
@@ -85,7 +85,7 @@ def get_array_module(x):
 
 
 def get_convolve(x):
-    """Returns correct fftconvolve module based on input
+    """Returns correct convolve module based on input
 
     Parameters
     ----------
@@ -159,6 +159,32 @@ def get_oaconvolve(x):
         raise NotImplementedError('oaconvolve not implemented in '
                                   'cupy/cusignal. Consider using a different'
                                   'option...')
+
+
+def get_correlate(x):
+    """Returns correct correlate module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return correlate
+
+    if cp.get_array_module(x) == np:
+        return correlate
+    else:
+        if deps.cusignal_enabled:
+            return cusignal.convolution.correlate
+        else:
+            raise ModuleNotFoundError(cusignal_message)
 
 
 def get_add_at(x):

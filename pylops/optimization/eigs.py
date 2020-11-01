@@ -2,7 +2,7 @@ import numpy as np
 from pylops.utils.backend import get_module
 
 
-def power_iteration(Op, niter=None, tol=1e-5, dtype='float32', backend='numpy'):
+def power_iteration(Op, niter=10, tol=1e-5, dtype='float32', backend='numpy'):
     """Power iteration algorithm.
 
     Power iteration algorithm, used to compute the largest eigenvector and
@@ -17,7 +17,7 @@ def power_iteration(Op, niter=None, tol=1e-5, dtype='float32', backend='numpy'):
     Op : :obj:`pylops.LinearOperator`
         Square operator
     niter : :obj:`int`, optional
-        Number of iterations (default: ``10*n``)
+        Number of iterations
     tol : :obj:`float`, optional
         Update tolerance
     dtype : :obj:`str`, optional
@@ -42,9 +42,6 @@ def power_iteration(Op, niter=None, tol=1e-5, dtype='float32', backend='numpy'):
         cmpx = 1j
     else:
         cmpx = 0
-
-    # Define iteration number
-    niter = 10 * Op.shape[0] if niter is None else niter
 
     # Choose a random vector to decrease the chance that vector
     # is orthogonal to the eigenvector
