@@ -4,6 +4,22 @@ from pylops import LinearOperator
 from pylops.utils.backend import get_array_module
 
 
+def _compute_iavamask(dims, dir, iava, ncp):
+    """Compute restriction mask when using cupy arrays
+    """
+    otherdims = np.array(dims)
+    otherdims = np.roll(otherdims, -dir)
+    otherdims = otherdims[1:]
+    iavamask = ncp.zeros(dims[dir], dtype=np.int)
+    iavamask[iava] = 1
+    iavamask = \
+        ncp.moveaxis(ncp.broadcast_to(iavamask,
+                                      list(otherdims) + [dims[dir]]),
+                     -1, dir)
+    iavamask = ncp.where(iavamask.ravel() == 1)[0]
+    return iavamask
+
+
 class Restriction(LinearOperator):
     r"""Restriction (or sampling) operator.
 
@@ -92,18 +108,7 @@ class Restriction(LinearOperator):
                 # explicitely create a list of indices in the n-dimensional
                 # model space which will be used in _rmatvec to place the input
                 if ncp != np:
-                    otherdims = np.array(dims)
-                    otherdims = np.roll(otherdims, -dir)
-                    otherdims = otherdims[1:]
-                    self.iavamask = ncp.zeros(self.dims[self.dir],
-                                              dtype=np.int)
-                    self.iavamask[iava] = 1
-                    self.iavamask = \
-                        ncp.moveaxis(ncp.broadcast_to(self.iavamask,
-                                                      list(otherdims) +
-                                                      [self.dims[self.dir]]),
-                                     -1, self.dir)
-                    self.iavamask = ncp.where(self.iavamask.ravel() == 1)[0]
+                    self.iavamask = _compute_iavamask(dims, dir, iava, ncp)
         self.inplace = inplace
         self.shape = (self.N, self.M)
         self.dtype = np.dtype(dtype)
@@ -135,6 +140,9 @@ class Restriction(LinearOperator):
                 ncp.put_along_axis(y, ncp.reshape(self.iava, self.iavareshape),
                                    x, axis=self.dir)
             else:
+                if not isinstance(self, 'iavamask'):
+                    self.iavamask = _compute_iavamask(self.dims, self.dir,
+                                                      self.iava, ncp)
                 y = ncp.zeros(int(self.M), dtype=self.dtype)
                 y[self.iavamask] = x.ravel()
             y = y.ravel()
