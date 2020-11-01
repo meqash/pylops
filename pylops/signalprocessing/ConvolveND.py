@@ -1,6 +1,7 @@
 import numpy as np
 from pylops import LinearOperator
-from pylops.utils.backend import get_array_module, get_convolve, get_correlate
+from pylops.utils.backend import get_array_module, get_convolve, \
+    get_correlate, to_cupy_conditional
 
 
 class ConvolveND(LinearOperator):
@@ -95,12 +96,22 @@ class ConvolveND(LinearOperator):
         self.explicit = False
 
     def _matvec(self, x):
+        # correct type of h if different from x and choose methods accordingly
+        if type(self.h) != type(x):
+            self.h = to_cupy_conditional(x, self.h)
+            self.convolve = get_convolve(self.h)
+            self.correlate = get_correlate(self.h)
         x = np.reshape(x, self.dims)
         y = self.convolve(x, self.h, mode='same', method=self.method)
         y = y.ravel()
         return y
 
     def _rmatvec(self, x):
+        # correct type of h if different from x and choose methods accordingly
+        if type(self.h) != type(x):
+            self.h = to_cupy_conditional(x, self.h)
+            self.convolve = get_convolve(self.h)
+            self.correlate = get_correlate(self.h)
         x = np.reshape(x, self.dims)
         y = self.correlate(x, self.h, mode='same', method=self.method)
         y = y.ravel()
