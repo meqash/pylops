@@ -68,6 +68,7 @@ class Restriction(LinearOperator):
     """
     def __init__(self, M, iava, dims=None, dir=0,
                  dtype='float64', inplace=True):
+        ncp = get_array_module(iava)
         self.M = M
         self.dir = dir
         self.iava = iava
@@ -86,6 +87,23 @@ class Restriction(LinearOperator):
                                    [1] * (len(self.dims) - self.dir - 1)
                 self.N = np.prod(self.dimsd)
                 self.reshape = True
+
+                # currently cupy does not support put_along_axis, so we need to
+                # explicitely create a list of indices in the n-dimensional
+                # model space which will be used in _rmatvec to place the input
+                if ncp != np:
+                    otherdims = np.array(dims)
+                    otherdims = np.roll(otherdims, -dir)
+                    otherdims = otherdims[1:]
+                    self.iavamask = ncp.zeros(self.dims[self.dir],
+                                              dtype=np.int)
+                    self.iavamask[iava] = 1
+                    self.iavamask = \
+                        ncp.moveaxis(ncp.broadcast_to(self.iavamask,
+                                                      list(otherdims) +
+                                                      [self.dims[self.dir]]),
+                                     -1, self.dir)
+                    self.iavamask = ncp.where(self.iavamask.ravel() == 1)[0]
         self.inplace = inplace
         self.shape = (self.N, self.M)
         self.dtype = np.dtype(dtype)
@@ -112,9 +130,13 @@ class Restriction(LinearOperator):
             y[self.iava] = x
         else:
             x = ncp.reshape(x, self.dimsd)
-            y = ncp.zeros(self.dims, dtype=self.dtype)
-            ncp.put_along_axis(y, ncp.reshape(self.iava, self.iavareshape),
-                               x, axis=self.dir)
+            if ncp == np:
+                y = ncp.zeros(self.dims, dtype=self.dtype)
+                ncp.put_along_axis(y, ncp.reshape(self.iava, self.iavareshape),
+                                   x, axis=self.dir)
+            else:
+                y = ncp.zeros(int(self.M), dtype=self.dtype)
+                y[self.iavamask] = x.ravel()
             y = y.ravel()
         return y
 
