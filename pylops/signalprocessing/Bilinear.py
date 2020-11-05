@@ -2,7 +2,7 @@ import logging
 import numpy as np
 from pylops import LinearOperator
 from pylops.utils.backend import get_array_module, \
-    get_add_at, to_numpy_conditional
+    get_add_at, to_numpy
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.WARNING)
 
@@ -78,7 +78,7 @@ class Bilinear(LinearOperator):
         ncp = get_array_module(iava)
 
         # check non-unique pairs (works only with numpy arrays)
-        _checkunique(to_numpy_conditional(iava))
+        _checkunique(to_numpy(iava))
 
         # define dimension of data
         ndims = len(dims)
