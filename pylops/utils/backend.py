@@ -210,7 +210,7 @@ def get_add_at(x):
         return cupyx.scatter_add
 
 
-def to_numpy_conditional(x):
+def to_numpy(x):
     """Convert x to numpy array
 
     Parameters
