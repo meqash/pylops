@@ -49,6 +49,7 @@ def power_iteration(Op, niter=10, tol=1e-5, dtype='float32', backend='numpy'):
           cmpx * ncp.random.rand(Op.shape[1]).astype(dtype)
     b_k = b_k / ncp.linalg.norm(b_k)
 
+    niter = 10 if niter is None else niter
     maxeig_old = 0.
     for iiter in range(niter):
         # compute largest eigenvector
