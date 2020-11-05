@@ -9,7 +9,7 @@ from pylops.optimization.leastsquares import NormalEquationsInversion, \
     RegularizedInversion
 from pylops.optimization.solver import cgls
 from pylops.optimization.eigs import power_iteration
-from pylops.utils.backend import get_array_module, get_module_name
+from pylops.utils.backend import get_array_module, get_module_name, to_numpy
 
 
 try:
@@ -825,7 +825,8 @@ def ISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
         if show:
             if iiter < 10 or niter - iiter < 10 or iiter % 10 == 0:
                 msg = '%6g  %12.5e  %10.3e   %9.3e  %10.3e' % \
-                      (iiter+1, xinv[0], costdata, costdata+costreg, xupdate)
+                      (iiter+1, to_numpy(xinv[:2])[0], costdata,
+                       costdata + costreg, xupdate)
                 print(msg)
 
         # check tolerance
@@ -1048,7 +1049,8 @@ def FISTA(Op, data, niter, eps=0.1, alpha=None, eigsiter=None, eigstol=0,
         if show:
             if iiter < 10 or niter - iiter < 10 or iiter % 10 == 0:
                 msg = '%6g  %12.5e  %10.3e   %9.3e  %10.3e' % \
-                      (iiter + 1, xinv[0], costdata, costdata + costreg, xupdate)
+                      (iiter + 1, to_numpy(xinv[:2])[0], costdata,
+                       costdata + costreg, xupdate)
                 print(msg)
 
         # check tolerance
