@@ -46,29 +46,20 @@ class ConvolveND(LinearOperator):
     :obj:`pylops.signalprocessing.Convolve2D` operator.
 
     """
-    def __init__(self, N, h, dims, offset=(0, 0, 0), dirs=None,
+    def __init__(self, N, h, dims, offset=None, dirs=None,
                  method='fft', dtype='float64'):
         ncp = get_array_module(h)
         self.h = h
         self.nh = np.array(self.h.shape)
         self.dirs = np.arange(len(dims)) if dirs is None else np.array(dirs)
 
-        # find out which directions are used for convolution and define offsets
-        if len(dims) != len(self.nh):
-            self.offset = self.nh // 2
-            dimsh = np.ones(len(dims), dtype=np.int)
-            for dir in self.dirs:
-                dimsh[dir] = self.nh[dir]
-                self.offset[dir] = int(offset[dir])
-            self.h = self.h.reshape(dimsh)
-        else:
-            self.offset = np.array(offset).astype(np.int)
-        for dir in self.dirs:
-            self.offset[dir] = int(offset[dir])
-
         # padding
-        self.offset = 2 * (self.nh // 2 - self.offset)
-        pad = [(0, 0) for _ in range(len(dims))]
+        if offset is None:
+            offset = np.zeros(self.h.ndim, dtype=np.int)
+        else:
+            offset = np.array(offset, dtype=np.int)
+        self.offset = 2 * (self.nh // 2 - offset)
+        pad = [(0, 0) for _ in range(self.h.ndim)]
         dopad = False
         for inh, nh in enumerate(self.nh):
             if nh % 2 == 0:
@@ -79,6 +70,14 @@ class ConvolveND(LinearOperator):
                 dopad = True
         if dopad:
             self.h = ncp.pad(self.h, pad, mode='constant')
+        self.nh = self.h.shape
+
+        # find out which directions are used for convolution and define offsets
+        if len(dims) != len(self.nh):
+            dimsh = np.ones(len(dims), dtype=np.int)
+            for idir, dir in enumerate(self.dirs):
+                dimsh[dir] = self.nh[idir]
+            self.h = self.h.reshape(dimsh)
 
         if np.prod(dims) != N:
             raise ValueError('product of dims must equal N!')
