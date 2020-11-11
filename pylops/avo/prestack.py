@@ -31,9 +31,11 @@ def PrestackLinearModelling(wav, theta, vsvp=0.5, nt0=1, spatdims=None,
     ----------
     wav : :obj:`np.ndarray`
         Wavelet in time domain (must had odd number of
-        elements and centered to zero)
+        elements and centered to zero). Note that the ``dtype`` of this
+        variable will define that of the operator
     theta : :obj:`np.ndarray`
-        Incident angles in degrees
+        Incident angles in degrees. Must have same ``dtype`` of ``wav`` (or
+        it will be automatically casted to it)
     vsvp : :obj:`float` or :obj:`np.ndarray`
         VS/VP ratio (constant or time/depth variant)
     nt0 : :obj:`int`, optional
@@ -79,10 +81,15 @@ def PrestackLinearModelling(wav, theta, vsvp=0.5, nt0=1, spatdims=None,
     pre-stack data.
 
     """
-    ncp = get_array_module(theta)
+    ncp = get_array_module(wav)
+
+    # define dtype to be used
+    dtype = theta.dtype # ensure theta.dtype rules that of operator
+    theta = theta.astype(dtype)
 
     # create vsvp profile
-    vsvp = vsvp if isinstance(vsvp, ncp.ndarray) else vsvp * ncp.ones(nt0)
+    vsvp = vsvp if isinstance(vsvp, ncp.ndarray) else \
+        vsvp * ncp.ones(nt0, dtype=dtype)
     nt0 = len(vsvp)
     ntheta = len(theta)
 
@@ -98,8 +105,8 @@ def PrestackLinearModelling(wav, theta, vsvp=0.5, nt0=1, spatdims=None,
 
     if explicit:
         # Create derivative operator
-        D = ncp.diag(0.5 * ncp.ones(nt0 - 1), k=1) - \
-            ncp.diag(0.5 * ncp.ones(nt0 - 1), -1)
+        D = ncp.diag(0.5 * ncp.ones(nt0 - 1, dtype=dtype), k=1) - \
+            ncp.diag(0.5 * ncp.ones(nt0 - 1, dtype=dtype), k=-1)
         D[0] = D[-1] = 0
         D = get_block_diag(theta)(*([D] * 3))
 
@@ -113,10 +120,9 @@ def PrestackLinearModelling(wav, theta, vsvp=0.5, nt0=1, spatdims=None,
                           linearization)
             raise NotImplementedError('%s not an available linearization...'
                                       % linearization)
-
-        G = [ncp.hstack((ncp.diag(G1[itheta] * ncp.ones(nt0)),
-                         ncp.diag(G2[itheta] * ncp.ones(nt0)),
-                         ncp.diag(G3[itheta] * ncp.ones(nt0))))
+        G = [ncp.hstack((ncp.diag(G1[itheta] * ncp.ones(nt0, dtype=dtype)),
+                         ncp.diag(G2[itheta] * ncp.ones(nt0, dtype=dtype)),
+                         ncp.diag(G3[itheta] * ncp.ones(nt0, dtype=dtype))))
              for itheta in range(ntheta)]
         G = ncp.vstack(G).reshape(ntheta * nt0, 3 * nt0)
 
@@ -127,23 +133,24 @@ def PrestackLinearModelling(wav, theta, vsvp=0.5, nt0=1, spatdims=None,
 
         # Combine operators
         M = ncp.dot(C, ncp.dot(G, D))
-        return MatrixMult(M, dims=spatdims)
+        Preop = MatrixMult(M, dims=spatdims, dtype=dtype)
 
     else:
         # Create wavelet operator
         Cop = Convolve1D(np.prod(np.array(dims)), h=wav,
-                         offset=len(wav)//2, dir=0, dims=dims)
+                         offset=len(wav)//2, dir=0, dims=dims, dtype=dtype)
 
         # create AVO operator
         AVOop = AVOLinearModelling(theta, vsvp, spatdims=spatdims,
-                                   linearization=linearization)
+                                   linearization=linearization, dtype=dtype)
 
         # Create derivative operator
         dimsm = list(dims)
         dimsm[1] = AVOop.npars
         Dop = FirstDerivative(np.prod(np.array(dimsm)), dims=dimsm,
-                              dir=0, sampling=1.)
-        return Cop*AVOop*Dop
+                              dir=0, sampling=1., dtype=dtype)
+        Preop = Cop * AVOop * Dop
+    return Preop
 
 
 def PrestackWaveletModelling(m, theta, nwav, wavc=None,
@@ -158,9 +165,11 @@ def PrestackWaveletModelling(m, theta, nwav, wavc=None,
     ----------
     m : :obj:`np.ndarray`
         elastic parameter profles of size :math:`[n_{t0} \times N]`
-        where :math:`N=3/2`
+        where :math:`N=3/2`. Note that the ``dtype`` of this
+        variable will define that of the operator
     theta : :obj:`int`
-        Incident angles in degrees
+        Incident angles in degrees. Must have same ``dtype`` of ``m`` (or
+        it will be automatically casted to it)
     nwav : :obj:`np.ndarray`
         Number of samples of wavelet to be applied/estimated
     wavc : :obj:`int`, optional
@@ -204,15 +213,20 @@ def PrestackWaveletModelling(m, theta, nwav, wavc=None,
     """
     ncp = get_array_module(theta)
 
+    # define dtype to be used
+    dtype = m.dtype  # ensure m.dtype rules that of operator
+    theta = theta.astype(dtype)
+
     # Create vsvp profile
-    vsvp = vsvp if isinstance(vsvp, ncp.ndarray) else vsvp * ncp.ones(m.shape[0])
+    vsvp = vsvp if isinstance(vsvp, ncp.ndarray) else \
+        vsvp * ncp.ones(m.shape[0], dtype=dtype)
     wavc = nwav // 2 if wavc is None else wavc
     nt0 = len(vsvp)
     ntheta = len(theta)
 
     # Create derivative operator
-    D = ncp.diag(0.5 * np.ones(nt0 - 1), k=1) - \
-        ncp.diag(0.5 * np.ones(nt0 - 1), -1)
+    D = ncp.diag(0.5 * np.ones(nt0 - 1, dtype=dtype), k=1) - \
+        ncp.diag(0.5 * np.ones(nt0 - 1, dtype=dtype), k=-1)
     D[0] = D[-1] = 0
     D = get_block_diag(theta)(*([D] * 3))
 
@@ -227,17 +241,16 @@ def PrestackWaveletModelling(m, theta, nwav, wavc=None,
         raise NotImplementedError('%s not an available linearization...'
                                   % linearization)
 
-    G = [ncp.hstack((ncp.diag(G1[itheta] * ncp.ones(nt0)),
-                     ncp.diag(G2[itheta] * ncp.ones(nt0)),
-                     ncp.diag(G3[itheta] * ncp.ones(nt0))))
+    G = [ncp.hstack((ncp.diag(G1[itheta] * ncp.ones(nt0, dtype=dtype)),
+                     ncp.diag(G2[itheta] * ncp.ones(nt0, dtype=dtype)),
+                     ncp.diag(G3[itheta] * ncp.ones(nt0, dtype=dtype))))
          for itheta in range(ntheta)]
     G = ncp.vstack(G).reshape(ntheta * nt0, 3 * nt0)
 
     # Create infinite-reflectivity data
     M = ncp.dot(G, ncp.dot(D, m.T.flatten())).reshape(ntheta, nt0)
-    Mconv = VStack([MatrixMult(convmtx(M[itheta], nwav)[wavc:-nwav+wavc+1])
-                    for itheta in range(ntheta)])
-
+    Mconv = VStack([MatrixMult(convmtx(M[itheta], nwav)[wavc:-nwav+wavc+1],
+                               dtype=dtype) for itheta in range(ntheta)])
     return Mconv
 
 
@@ -315,7 +328,6 @@ def PrestackInversion(data, theta, wav, m0=None, linearization='akirich',
     more details.
     """
     ncp = get_array_module(data)
-    solver = lsqr if ncp == np else cgls
 
     # find out dimensions
     if m0 is None and linearization is None:
@@ -374,11 +386,17 @@ def PrestackInversion(data, theta, wav, m0=None, linearization='akirich',
             if epsI is None and not simultaneous:
                 # solve unregularized equations indipendently trace-by-trace
                 minv = \
-                    get_lstsq(data)(PPop.A, datar.reshape(nt0*ntheta, nspatprod).squeeze(),
+                    get_lstsq(data)(PPop.A,
+                                    datar.reshape(nt0*ntheta, nspatprod).squeeze(),
                                     **kwargs_solver)[0]
             elif epsI is None and simultaneous:
                 # solve unregularized equations simultaneously
-                minv = solver(PPop, datar, **kwargs_solver)[0]
+                if ncp == np:
+                    minv = lsqr(PPop, datar, **kwargs_solver)[0]
+                else:
+                    minv = cgls(PPop, datar,
+                                x0=ncp.zeros(int(PPop.shape[1]), PPop.dtype),
+                                **kwargs_solver)[0]
             elif epsI is not None:
                 # create regularized normal equations
                 PP = ncp.dot(PPop.A.T, PPop.A) + \
@@ -390,7 +408,15 @@ def PrestackInversion(data, theta, wav, m0=None, linearization='akirich',
                 else:
                     # solve regularized normal equations simultaneously
                     PPop_reg = MatrixMult(PP, dims=nspatprod)
-                    minv = solver(PPop_reg, datarn.ravel(), **kwargs_solver)[0]
+                    if ncp == np:
+                        minv = lsqr(PPop_reg, datarn.ravel(),
+                                    **kwargs_solver)[0]
+                    else:
+                        minv = cgls(PPop_reg,
+                                    datarn.ravel(),
+                                    x0=ncp.zeros(int(PPop_reg.shape[1]),
+                                                 PPop_reg.dtype),
+                                    **kwargs_solver)[0]
             #else:
             #    # create regularized normal eqs. and solve them simultaneously
             #    PP = np.dot(PPop.A.T, PPop.A) + epsI * np.eye(nt0*nm)
@@ -399,7 +425,12 @@ def PrestackInversion(data, theta, wav, m0=None, linearization='akirich',
             #    minv = lstsq(PPop_reg, datarn.flatten(), **kwargs_solver)[0]
         else:
             # solve unregularized normal equations simultaneously with lop
-            minv = solver(PPop, datar, **kwargs_solver)[0]
+            if ncp == np:
+                minv = lsqr(PPop, datar, **kwargs_solver)[0]
+            else:
+                minv = cgls(PPop, datar,
+                            x0=ncp.zeros(int(PPop.shape[1]), PPop.dtype),
+                            **kwargs_solver)[0]
     else:
         # Create Thicknov regularization
         if epsI is not None:
