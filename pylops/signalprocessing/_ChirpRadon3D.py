@@ -8,7 +8,7 @@ except:
     pyfftw = None
 
 
-def _chirp_radon_3d(data, dt, dx1, dx2, pmax, mode='f'):
+def _chirp_radon_3d(data, dt, dy, dx, pmax, mode='f'):
     r"""3D Chirp Radon transform
 
     Applies 3D Radon transform using Fast Fourier Transform and Chirp
@@ -56,8 +56,8 @@ def _chirp_radon_3d(data, dt, dx1, dx2, pmax, mode='f'):
     omega = (ncp.fft.fftfreq(nt, 1/nt)/(nt*dt)).reshape((1, nt)).astype(dtype)
 
     # slowness samplings
-    dp1 = 2 * dt * pmax[0] / dx1 / nx
-    dp2 = 2 * dt * pmax[1] / dx2 / ny
+    dp1 = 2 * dt * pmax[0] / dy / nx
+    dp2 = 2 * dt * pmax[1] / dx / ny
 
     # spatial axes
     x = (ncp.fft.fftfreq(2 * nx, 1 / (2 * nx)) ** 2).reshape(
@@ -66,9 +66,9 @@ def _chirp_radon_3d(data, dt, dx1, dx2, pmax, mode='f'):
         (2 * ny, 1, 1)).astype(dtype)
 
     # K coefficients
-    K01 = ncp.exp(sign * np.pi * 1j * dp1 * dx1 * omega * x).reshape(
+    K01 = ncp.exp(sign * np.pi * 1j * dp1 * dy * omega * x).reshape(
         (1, int(2 * nx), nt))
-    K02 = ncp.exp(sign * np.pi * 1j * dp2 * dx2 * omega * y).reshape(
+    K02 = ncp.exp(sign * np.pi * 1j * dp2 * dx * omega * y).reshape(
         (int(2 * ny), 1, nt))
 
     # K conj coefficients
@@ -86,13 +86,13 @@ def _chirp_radon_3d(data, dt, dx1, dx2, pmax, mode='f'):
 
     if mode == 'i':
         g = ncp.fft.ifftn(g[0:ny, 0:nx, :] * K1 * K2 * abs(omega) ** 2 *
-                         dp1 * dp2 * dx1 * dx2, axes=(2,)).real
+                         dp1 * dp2 * dy * dx, axes=(2,)).real
     else:
         g = ncp.fft.ifftn(g[0:ny, 0:nx, :] * K1 * K2, axes=(2,)).real
     return g
 
 
-def _chirp_radon_3d_fftw(data, dt, dx1, dx2, pmax, mode='f', **kwargs_fftw):
+def _chirp_radon_3d_fftw(data, dt, dy, dx, pmax, mode='f', **kwargs_fftw):
     """3D Chirp Radon transform with pyfftw
 
     Applies 3D Radon transform using Fast Fourier Transform and Chirp
@@ -136,8 +136,8 @@ def _chirp_radon_3d_fftw(data, dt, dx1, dx2, pmax, mode='f', **kwargs_fftw):
     omega = (np.fft.fftfreq(nt, 1 / nt) / (nt * dt)).reshape((1, nt)).astype(dtype)
 
     # slowness samplings
-    dp1 = 2 * dt * pmax[1] / dx1 / nx
-    dp2 = 2 * dt * pmax[0] / dx2 / ny
+    dp1 = 2 * dt * pmax[1] / dy / nx
+    dp2 = 2 * dt * pmax[0] / dx / ny
 
     # pyfftw plans
     data = pyfftw.byte_align(data, n=None, dtype=dtype)
@@ -170,9 +170,9 @@ def _chirp_radon_3d_fftw(data, dt, dx1, dx2, pmax, mode='f', **kwargs_fftw):
     xw = (np.fft.fftfreq(2 * nx, 1 / (2 * nx)) ** 2).reshape((1, 2 * nx, 1)).astype(dtype)
     yw = (np.fft.fftfreq(2 * ny, 1 / (2 * ny)) ** 2).reshape((2 * ny, 1, 1)).astype(dtype)
 
-    K01[:, :, :] = np.exp(sign*np.pi * 1j * dp1 * dx1 * omega * xw).reshape(
+    K01[:, :, :] = np.exp(sign*np.pi * 1j * dp1 * dy * omega * xw).reshape(
         (1, int(2 * nx), nt))
-    K02[:, :, :] = np.exp(sign*np.pi * 1j * dp2 * dx2 * omega * yw).reshape(
+    K02[:, :, :] = np.exp(sign*np.pi * 1j * dp2 * dx * omega * yw).reshape(
         (int(2 * ny), 1, nt))
 
     K1[:, :, :] = np.conj(np.fft.fftshift(K01, axes=(1,)))[:, int(nx / 2) + 1:int(3 * nx / 2) + 1, :]
@@ -184,7 +184,7 @@ def _chirp_radon_3d_fftw(data, dt, dx1, dx2, pmax, mode='f', **kwargs_fftw):
 
     if mode == 'i':
         g = ifft_object_t(gw[0:ny, 0:nx, :] * K1 * K2 *
-                          abs(omega) ** 2 * dp1 * dp2 * dx1 * dx2).real
+                          abs(omega) ** 2 * dp1 * dp2 * dy * dx).real
     else:
         g = ifft_object_t(gw[0:ny, 0:nx, :] * K1 * K2).real
     return g
