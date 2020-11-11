@@ -290,7 +290,7 @@ def PoststackInversion(data, wav, m0=None, explicit=False, simultaneous=False,
                                 **kwargs_solver)[0]
             elif epsI is not None:
                 # create regularized normal equations
-                PP = ncp.dot(PPop.A.T, PPop.A) + epsI * np.eye(nt0)
+                PP = ncp.dot(PPop.A.T, PPop.A) + epsI * ncp.eye(nt0)
                 datarn = ncp.dot(PPop.A.T, datar.reshape(nt0, nspatprod))
                 if not simultaneous:
                     # solve regularized normal eqs. trace-by-trace
