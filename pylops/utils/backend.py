@@ -1,10 +1,15 @@
 import numpy as np
 from scipy.signal import convolve, correlate, fftconvolve, oaconvolve
+from scipy.linalg import block_diag, toeplitz, lstsq
+from scipy.sparse import csc_matrix
 from pylops.utils import deps
 
 if deps.cupy_enabled:
     import cupy as cp
     import cupyx
+    from cupyx.scipy.linalg import block_diag as cp_block_diag
+    from cupyx.scipy.linalg import toeplitz as cp_toeplitz
+    from cupyx.scipy.sparse import csc_matrix as cp_csc_matrix
 
 if deps.cusignal_enabled:
     import cusignal
@@ -208,6 +213,98 @@ def get_add_at(x):
         return np.add.at
     else:
         return cupyx.scatter_add
+
+
+def get_block_diag(x):
+    """Returns correct block_diag module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return block_diag
+
+    if cp.get_array_module(x) == np:
+        return block_diag
+    else:
+        return cp_block_diag
+
+
+def get_toeplitz(x):
+    """Returns correct toeplitz module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return toeplitz
+
+    if cp.get_array_module(x) == np:
+        return toeplitz
+    else:
+        return cp_toeplitz
+
+
+def get_csc_matrix(x):
+    """Returns correct csc_matrix module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return csc_matrix
+
+    if cp.get_array_module(x) == np:
+        return csc_matrix
+    else:
+        return cp_csc_matrix
+
+
+def get_lstsq(x):
+    """Returns correct lstsq module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return lstsq
+
+    if cp.get_array_module(x) == np:
+        return lstsq
+    else:
+        return cp.linalg.lstsq
 
 
 def to_numpy(x):
