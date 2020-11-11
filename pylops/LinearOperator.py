@@ -3,12 +3,14 @@ from __future__ import division
 import logging
 import numpy as np
 import scipy as sp
+
 from scipy.linalg import solve, lstsq
+from scipy.linalg import eigvals
+from scipy.linalg.interpolative import estimate_spectral_norm
 from scipy.sparse.linalg import LinearOperator as spLinearOperator
-from scipy.sparse.linalg.interface import _ProductLinearOperator, _ScaledLinearOperator
+from scipy.sparse.linalg.interface import _ProductLinearOperator
 from scipy.sparse import eye
 from scipy.sparse.linalg import spsolve, lsqr
-from scipy.linalg import eigvals
 from scipy.sparse.linalg import eigs as sp_eigs
 from scipy.sparse.linalg import eigsh as sp_eigsh
 from scipy.sparse.linalg import lobpcg as sp_lobpcg
@@ -80,7 +82,10 @@ class LinearOperator(spLinearOperator):
         return y
 
     def __rmul__(self, x):
-        return aslinearoperator(super().__rmul__(x))
+        if np.isscalar(x):
+            return aslinearoperator(_ScaledLinearOperator(self, x))
+        else:
+            return NotImplemented
 
     def __pow__(self, p):
         return aslinearoperator(super().__pow__(p))
@@ -89,7 +94,7 @@ class LinearOperator(spLinearOperator):
         return aslinearoperator(super().__add__(x))
 
     def __neg__(self):
-        return aslinearoperator(super().__neg__())
+        return aslinearoperator(_ScaledLinearOperator(self, -1))
 
     def __sub__(self, x):
         return aslinearoperator(super().__sub__(x))
@@ -567,15 +572,43 @@ class LinearOperator(spLinearOperator):
 
         """
         if not uselobpcg:
-            cond = np.asscalar(self.eigs(neigs=1, which='LM', **kwargs_eig))/ \
-                   np.asscalar(self.eigs(neigs=1, which='SM', **kwargs_eig))
+            cond = self.eigs(neigs=1, which='LM', **kwargs_eig).item() / \
+                   self.eigs(neigs=1, which='SM', **kwargs_eig).item()
         else:
-            cond = np.asscalar(self.eigs(neigs=1, uselobpcg=True, largest=True,
-                                         **kwargs_eig)) / \
-                   np.asscalar(self.eigs(neigs=1, uselobpcg=True, largest=False,
-                                         **kwargs_eig))
+            cond = self.eigs(neigs=1, uselobpcg=True, largest=True,
+                             **kwargs_eig).item() / \
+                   self.eigs(neigs=1, uselobpcg=True, largest=False,
+                             **kwargs_eig).item()
 
         return cond
+
+    def spectral_norm(self, niter=20):
+        r"""Spectral norm of linear operator.
+
+        Return an estimate of the spectral norm of the linear operator (i.e.,
+        largest singular value) via
+        :func:`scipy.linalg.interpolative.estimate_spectral_norm`
+
+        Parameters
+        ----------
+        niter : :obj:`int`, optional
+            Number of iterations
+
+        Returns
+        -------
+        snorm : :obj:`float` or :obj:`complex`
+            Spectral norm.
+
+        Notes
+        -----
+        The spectral norm of a matrix :math:`\mathbf{A}`
+        equals its largest singular value
+        (or the square root of the largest eigenvalue of
+        :math:`\mathbf{A}^H \mathbf{A}`.
+
+        """
+        snorm = estimate_spectral_norm(self, niter)
+        return snorm
 
     def conj(self):
         """Complex conjugate operator
@@ -616,6 +649,52 @@ class LinearOperator(spLinearOperator):
         """
         colop = _ColumnLinearOperator(self, cols)
         return colop
+
+
+def _get_dtype(operators, dtypes=None):
+    if dtypes is None:
+        dtypes = []
+    opdtypes = []
+    for obj in operators:
+        if obj is not None and hasattr(obj, 'dtype'):
+            opdtypes.append(obj.dtype)
+    return np.find_common_type(opdtypes, dtypes)
+
+
+class _ScaledLinearOperator(spLinearOperator):
+    """
+    Sum Linear Operator
+
+    Modified version of scipy _ScaledLinearOperator which uses a modified
+    _get_dtype where the scalar and operator types are passed separately to
+    np.find_common_type. Passing them together does lead to problems when using
+    np.float32 operators which are casted to no.float64
+
+    """
+    def __init__(self, A, alpha):
+        if not isinstance(A, spLinearOperator):
+            raise ValueError('LinearOperator expected as A')
+        if not np.isscalar(alpha):
+            raise ValueError('scalar expected as alpha')
+        dtype = _get_dtype([A], [type(alpha)])
+        super(_ScaledLinearOperator, self).__init__(dtype, A.shape)
+        self.args = (A, alpha)
+
+    def _matvec(self, x):
+        return self.args[1] * self.args[0].matvec(x)
+
+    def _rmatvec(self, x):
+        return np.conj(self.args[1]) * self.args[0].rmatvec(x)
+
+    def _rmatmat(self, x):
+        return np.conj(self.args[1]) * self.args[0].rmatmat(x)
+
+    def _matmat(self, x):
+        return self.args[1] * self.args[0].matmat(x)
+
+    def _adjoint(self):
+        A, alpha = self.args
+        return A.H * np.conj(alpha)
 
 
 class _ConjLinearOperator(LinearOperator):
