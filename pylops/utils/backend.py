@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.signal import convolve, correlate, fftconvolve, oaconvolve
 from scipy.linalg import block_diag, toeplitz, lstsq
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_matrix, eye
 from pylops.utils import deps
 
 if deps.cupy_enabled:
@@ -10,6 +10,7 @@ if deps.cupy_enabled:
     from cupyx.scipy.linalg import block_diag as cp_block_diag
     from cupyx.scipy.linalg import toeplitz as cp_toeplitz
     from cupyx.scipy.sparse import csc_matrix as cp_csc_matrix
+    from cupyx.scipy.sparse import eye as cp_eye
 
 if deps.cusignal_enabled:
     import cusignal
@@ -282,6 +283,29 @@ def get_csc_matrix(x):
         return csc_matrix
     else:
         return cp_csc_matrix
+
+
+def get_sparse_eye(x):
+    """Returns correct sparse eye module based on input
+
+    Parameters
+    ----------
+    x : :obj:`numpy.ndarray` or :obj:`cupy.ndarray`
+        Array
+
+    Returns
+    -------
+    mod : :obj:`func`
+        Module to be used to process array (:mod:`numpy` or :mod:`cupy`)
+
+    """
+    if not deps.cupy_enabled:
+        return eye
+
+    if cp.get_array_module(x) == np:
+        return eye
+    else:
+        return cp_eye
 
 
 def get_lstsq(x):

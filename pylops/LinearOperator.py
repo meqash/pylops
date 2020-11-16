@@ -16,7 +16,7 @@ from scipy.sparse.linalg import eigsh as sp_eigsh
 from scipy.sparse.linalg import lobpcg as sp_lobpcg
 from scipy.sparse import csr_matrix
 
-from pylops.utils.backend import get_array_module
+from pylops.utils.backend import get_array_module, get_module, get_sparse_eye
 from pylops.optimization.solver import cgls
 
 logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.WARNING)
@@ -307,7 +307,7 @@ class LinearOperator(spLinearOperator):
                             niter=niter)[0]
         return xest
 
-    def todense(self):
+    def todense(self, backend='numpy'):
         r"""Return dense matrix.
 
         The operator in converted into its dense matrix equivalent. In order
@@ -323,12 +323,20 @@ class LinearOperator(spLinearOperator):
         of rows and columns and it should be used mostly as a way to inspect
         the structure of the matricial equivalent of the operator.
 
+        Parameters
+        ----------
+        backend : :obj:`str`, optional
+            Backend used to densify matrix (``numpy`` or ``cupy``). Note that
+            this must be consistent with how the operator has been created.
+
         Returns
         -------
-        matrix : :obj:`numpy.ndarray`
+        matrix : :obj:`numpy.ndarray` or :obj:`cupy.ndarray`
             Dense matrix.
 
         """
+        ncp = get_module(backend)
+
         # Wrap self into a LinearOperator. This is done for cases where self
         # is a _SumLinearOperator or _ProductLinearOperator, so that it regains
         # the dense method
@@ -338,10 +346,10 @@ class LinearOperator(spLinearOperator):
         shapemin = min(Op.shape)
         if shapemin <= 1e3:
             # use numpy for small matrices (faster but heavier on memory)
-            identity = np.eye(shapemin, dtype=self.dtype)
+            identity = ncp.eye(shapemin, dtype=self.dtype)
         else:
             # use scipy for small matrices (slower but lighter on memory)
-            identity = eye(shapemin, dtype=self.dtype).tocsc()
+            identity = get_sparse_eye(ncp.ones(1))(shapemin, dtype=self.dtype).tocsc()
 
         # Apply operator
         if Op.shape[1] == shapemin:
