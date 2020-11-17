@@ -9,7 +9,6 @@ from scipy.linalg import eigvals
 from scipy.linalg.interpolative import estimate_spectral_norm
 from scipy.sparse.linalg import LinearOperator as spLinearOperator
 from scipy.sparse.linalg.interface import _ProductLinearOperator
-from scipy.sparse import eye
 from scipy.sparse.linalg import spsolve, lsqr
 from scipy.sparse.linalg import eigs as sp_eigs
 from scipy.sparse.linalg import eigsh as sp_eigsh

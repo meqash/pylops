@@ -42,6 +42,26 @@ def test_overloads(par):
 
 
 @pytest.mark.parametrize("par", [(par1), (par1j)])
+def test_scaled(par):
+    """Verify that scaled linear operator produces the correct type based
+    on its inputs types
+    """
+    dtypes = [np.float32, np.float64]
+    for dtype in dtypes:
+        diag = np.arange(par['nx'], dtype=dtype) + \
+               par['imag'] * np.arange(par['nx'], dtype=dtype)
+        Dop = Diagonal(diag, dtype=dtype)
+        Sop = 3. * Dop
+        S1op = -3. * Dop
+        S2op = Dop * 3.
+        S3op = Dop * -3.
+        assert Sop.dtype == dtype
+        assert S1op.dtype == dtype
+        assert S2op.dtype == dtype
+        assert S3op.dtype == dtype
+
+
+@pytest.mark.parametrize("par", [(par1), (par1j)])
 def test_dense(par):
     """Dense matrix representation of square matrix
     """
@@ -81,7 +101,7 @@ def test_eigs(par):
     """Eigenvalues and condition number estimate with ARPACK
     """
     # explicit=True
-    diag = np.arange(par['nx'], 0, -1) +\
+    diag = np.arange(par['nx'], 0, -1) + \
            par['imag'] * np.arange(par['nx'], 0, -1)
     Op = MatrixMult(np.vstack((np.diag(diag),
                                np.zeros((par['ny'] - par['nx'], par['nx'])))))
@@ -106,10 +126,29 @@ def test_eigs(par):
     cond = Op.cond()
     assert_array_almost_equal(np.real(cond), par['nx'], decimal=3)
 
-    # uselobpcg cannot be used for square non-symmetric complex matrices
     if np.iscomplex(Op):
         cond1 = Op.cond(uselobpcg=True, niter=100)
         assert_array_almost_equal(np.real(cond), np.real(cond1), decimal=3)
+
+
+@pytest.mark.parametrize("par", [(par1), (par2), (par1j)])
+def test_spectral_norm(par):
+    """Spectral norm estimate via scipy
+    """
+    # explicit=True
+    diag = np.arange(par['nx'], 0, -1) + \
+           par['imag'] * np.arange(par['nx'], 0, -1)
+    Op = MatrixMult(np.vstack((np.diag(diag),
+                               np.zeros((par['ny'] - par['nx'], par['nx'])))))
+    print(Op.eigs(1), Op.spectral_norm(100))
+    assert_array_almost_equal(np.real(Op.eigs(1)), Op.spectral_norm(100), decimal=3)
+
+    # explicit=False
+    Op = Diagonal(diag)
+    if par['ny'] > par['nx']:
+        Op = VStack([Op, Zero(par['ny'] - par['nx'], par['nx'])])
+    print(Op.eigs(1), Op.spectral_norm(100))
+    assert_array_almost_equal(np.real(Op.eigs(1)), Op.spectral_norm(100), decimal=3)
 
 
 @pytest.mark.parametrize("par", [(par1), (par2), (par1j), (par2j)])
