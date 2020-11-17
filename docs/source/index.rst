@@ -121,6 +121,7 @@ that can be tailored to our needs, and as contribution to the free software comm
 
    installation.rst
    performance.rst
+   gpu.rst
    extensions.rst
    tutorials/index.rst
    FAQs <faq.rst>
