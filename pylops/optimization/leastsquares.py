@@ -119,7 +119,8 @@ def NormalEquationsInversion(Op, Regs, data, Weight=None, dataregs=None,
     # Add regularization terms
     if epsI > 0:
         Op_normal += epsI ** 2 * Diagonal(ncp.ones(int(Op.shape[1]),
-                                                   dtype=Op.dtype))
+                                                   dtype=Op.dtype),
+                                          dtype=Op.dtype)
 
     if Regs is not None:
         for epsR, Reg, datareg in zip(epsRs, Regs, dataregs):

@@ -4,10 +4,7 @@ import numpy as np
 from pylops.utils.backend import get_array_module
 
 
-def cg(Op, y, x0, niter=10, damp=0., tol=1e-4,
-       show=False, callback=None):
-
-
+def cg(Op, y, x0, niter=10, damp=0., tol=1e-4, show=False, callback=None):
     r"""Conjugate gradient
 
     Solve a square system of equations given an operator ``A`` and
