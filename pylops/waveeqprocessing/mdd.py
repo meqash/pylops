@@ -408,7 +408,8 @@ def MDD(G, d, dt=0.004, dr=1., nfmax=None, wav=None,
         if ncp == np:
             minv = lsqr(MDCop, d.flatten(), **kwargs_solver)[0]
         else:
-            minv = cgls(MDCop, d.flatten(), ncp.zeros(int(MDCop.shape[1]), dtype=MDCop.dtype),
+            minv = cgls(MDCop, d.flatten(), ncp.zeros(int(MDCop.shape[1]),
+                                                      dtype=MDCop.dtype),
                         **kwargs_solver)[0]
     minv = np.squeeze(minv.reshape(nt2, nr, nv))
     minv = np.moveaxis(minv, 0, -1)
