@@ -217,7 +217,7 @@ def Deghosting(p, nt, nr, dt, dr, vel, zrec, pd=None, win=None,
         Depth of receiver array
     pd : :obj:`np.ndarray`, optional
         Direct arrival to be subtracted from ``p``
-    pd : :obj:`np.ndarray`, optional
+    win : :obj:`np.ndarray`, optional
         Time window to be applied to ``p`` to remove the direct arrival
         (if ``pd=None``)
     ntaper : :obj:`float` or :obj:`tuple`, optional
@@ -236,7 +236,8 @@ def Deghosting(p, nt, nr, dt, dr, vel, zrec, pd=None, win=None,
     dottest : :obj:`bool`, optional
         Apply dot-test
     dtype : :obj:`str`, optional
-        Type of elements in input array.
+        Type of elements in input array. If ``None``, directly inferred
+        from ``p``
     **kwargs_solver
         Arbitrary keyword arguments for chosen ``solver``
 
@@ -303,9 +304,19 @@ def Deghosting(p, nt, nr, dt, dr, vel, zrec, pd=None, win=None,
           Padop * Diagonal(taper.ravel(), dtype=dtype)
 
     # Decomposition operator
-    Dupop = (Identity(nt * nrs) + Pop)
+    Dupop = (Identity(nt * nrs, dtype=p.dtype) + Pop)
     if dottest:
         Dottest(Dupop, nt * nrs, nt * nrs, verb=True)
+
+    # Add restriction
+    if restriction is not None:
+        Dupop_norestr = Dupop
+        Dupop = restriction * Dupop
+
+    # Add sparsify transform
+    if sptransf is not None:
+        Dupop_norestr = Dupop_norestr * sptransf
+        Dupop =  Dupop * sptransf
 
     # Define data
     if pd is not None:
@@ -315,6 +326,14 @@ def Deghosting(p, nt, nr, dt, dr, vel, zrec, pd=None, win=None,
 
     # Inversion
     pup = solver(Dupop, d.ravel(), **kwargs_solver)[0]
+
+    # Apply sparse transform
+    if sptransf is not None:
+        p = Dupop_norestr * pup # reconstruct p at finely sampled spatial axes
+        pup = sptransf * pup
+        p = np.real(p).reshape(dims)
+
+    # Finalize estimates
     pup = np.real(pup).reshape(dims)
     pdown = p - pup
 
